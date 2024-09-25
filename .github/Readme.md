@@ -81,7 +81,7 @@ Since testing of the repository layer is performed on a real database, it is nec
 <p align="center">TRB/USDT:</p>
 <p float="left" align="middle">
   <img src="./cases/trb_1.png" width="49%">
-  <img src=".cases//trb_2.png" width="49%">
+  <img src="./cases/trb_2.png" width="49%">
 </p>
 
 <p align="center">VET/USDT:</p>
