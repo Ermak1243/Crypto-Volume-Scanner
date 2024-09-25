@@ -1,0 +1,381 @@
+definitions:
+  models.FoundVolume:
+    properties:
+      difference:
+        description: Difference between found volume and best ask or best bid and
+          found volume in percent
+        type: number
+      exchange:
+        type: string
+      index:
+        description: Number of rows between found volume index and best ask or best
+          bid and found volume index
+        type: integer
+      pair:
+        type: string
+      price:
+        type: number
+      side:
+        type: string
+      volume:
+        type: number
+      volume_time_found:
+        type: string
+    type: object
+  models.PasswordUpdate:
+    properties:
+      new_password:
+        example: new_password
+        type: string
+      new_password_repeat:
+        example: new_password
+        type: string
+      old_password:
+        example: password
+        type: string
+    type: object
+  models.Response:
+    properties:
+      result:
+        type: string
+    type: object
+  models.Tokens:
+    properties:
+      access:
+        type: string
+      expires_at:
+        type: integer
+      refresh:
+        type: string
+    type: object
+  models.UserAuth:
+    properties:
+      email:
+        example: example@example.com
+        type: string
+      password:
+        example: password
+        type: string
+    type: object
+  models.UserPairs:
+    properties:
+      exact_value:
+        example: 3
+        type: number
+      exchange:
+        example: binance_spot
+        type: string
+      pair:
+        example: BTC/USDT
+        type: string
+    type: object
+info:
+  contact: {}
+  title: Crypto Volume Finder API
+  version: "1.0"
+paths:
+  /api/user:
+    delete:
+      description: Delete the authenticated user's account
+      parameters:
+      - description: Access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Delete a user account
+      tags:
+      - users
+  /api/user/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and issue tokens if successful
+      parameters:
+      - description: User login data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserAuth'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New tokens data
+          schema:
+            $ref: '#/definitions/models.Tokens'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Log in a user
+      tags:
+      - users
+  /api/user/auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Create a new user account with email and password.
+        Returns the access token, the refresh token, and the time when the access token ceases to be valid. After the access token has ceased to be valid, you need to send a request along the path "/api/user/auth/token" to get a new pair of tokens.
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserAuth'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response with tokens data
+          schema:
+            $ref: '#/definitions/models.Tokens'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Sign up a new user
+      tags:
+      - users
+  /api/user/auth/tokens:
+    get:
+      description: Retrieve new access and refresh tokens for the authenticated user
+      parameters:
+      - description: Refresh token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Successful response with new tokens
+          schema:
+            $ref: '#/definitions/models.Tokens'
+        "401":
+          description: Invalid refresh token
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Get new tokens
+      tags:
+      - users
+  /api/user/pair:
+    delete:
+      consumes:
+      - application/json
+      description: Remove an existing pair for the authenticated user
+      parameters:
+      - description: Access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: The pair that should be deleted
+        in: query
+        name: pair
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response indicating the pair was deleted
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Delete a user pair
+      tags:
+      - user-pairs
+  /api/user/pair/add:
+    post:
+      consumes:
+      - application/json
+      description: Create a new pair for the authenticated user
+      parameters:
+      - description: Access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User pair data
+        in: body
+        name: pair
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserPairs'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response indicating the pair was added
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Add a new user pair
+      tags:
+      - user-pairs
+  /api/user/pair/all-pairs:
+    get:
+      description: Get all user pairs associated with the authenticated user's account
+      parameters:
+      - description: Access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of user pairs
+          schema:
+            items:
+              $ref: '#/definitions/models.UserPairs'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Retrieve all pairs for the authenticated user
+      tags:
+      - user-pairs
+  /api/user/pair/found-volumes:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint retrieves a list of all found volumes associated
+        with the authenticated user.
+      parameters:
+      - description: Access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            items:
+              $ref: '#/definitions/models.FoundVolume'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Retrieve all found volumes for the authenticated user
+      tags:
+      - user-pairs
+  /api/user/pair/update-exact-value:
+    put:
+      consumes:
+      - application/json
+      description: Update an existing pair for the authenticated user
+      parameters:
+      - description: Access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User pair data
+        in: body
+        name: pair
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserPairs'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response indicating the pair was updated
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Update the exact value of a user pair
+      tags:
+      - user-pairs
+  /api/user/update-password:
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Update the password for the authenticated user.
+        Returns the access token, the refresh token, and the time when the access token ceases to be valid. After the access token has ceased to be valid, you need to send a request along the path "/api/user/auth/token" to get a new pair of tokens.
+      parameters:
+      - description: Access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Passwords data
+        in: body
+        name: passwords
+        required: true
+        schema:
+          $ref: '#/definitions/models.PasswordUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New tokens data
+          schema:
+            $ref: '#/definitions/models.Tokens'
+        "400":
+          description: Invalid password
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Update user password
+      tags:
+      - users
+swagger: "2.0"

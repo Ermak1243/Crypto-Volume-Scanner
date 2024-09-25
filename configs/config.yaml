@@ -1,0 +1,13 @@
+postgres:
+  db_user: "cvs"
+  db_host: "cvs-postgres"
+  db_name: "cvs"
+  db_password: "password"
+  db_port: 5432
+  db_ssl_mode: "disable"  
+
+jwt_secret_key: "secret"
+context_timeout: 3
+access_token_lifetime_hours: 20
+refresh_token_lifetime_hours: 1200
+server_port: ":8000"

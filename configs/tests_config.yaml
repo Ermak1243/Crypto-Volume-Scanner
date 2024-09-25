@@ -1,0 +1,9 @@
+postgres:
+  db_user: "cvs"
+  db_host: "localhost"
+  db_name: "cvs"
+  db_password: "password"
+  db_port: 5434
+  db_ssl_mode: "disable"
+
+server_port: ":8000"
