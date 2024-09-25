@@ -17,7 +17,7 @@ import (
 //
 // 2. **Swagger UI**:
 //   - GET /swagger/*: Endpoint to serve the Swagger UI for the API, which is hosted
-//     on `http://localhost:6060/swagger/*`.
+//     on `http://localhost:8000/docs/swagger/*`.
 //
 // Parameters:
 //   - group: A Fiber router group for organizing documentation routes.
