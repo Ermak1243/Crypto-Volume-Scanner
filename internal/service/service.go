@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	"main/internal/domain/models"
+	"main/internal/models"
 	"regexp"
 )
 

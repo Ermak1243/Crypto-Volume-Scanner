@@ -20,6 +20,7 @@ type PostgresConfig struct {
 type Config struct {
 	Postgres                  PostgresConfig `yaml:"postgres"`                     // PostgreSQL configuration
 	JwtSecretKey              string         `yaml:"jwt_secret_key"`               // Secret key used for signing JWTs
+	LogLevel                  string         `yaml:"log_level"`                    // Logging level
 	ServerPort                string         `yaml:"server_port"`                  // Port on which the server will run
 	AccessTokenLifetimeHours  int            `yaml:"access_token_lifetime_hours"`  // Lifetime of access tokens in hours
 	RefreshTokenLifetimeHours int            `yaml:"refresh_token_lifetime_hours"` // Lifetime of refresh tokens in hours

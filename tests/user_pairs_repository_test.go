@@ -3,7 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
-	"main/internal/domain/models"
+	"main/internal/models"
 	"main/internal/repository"
 	"testing"
 	"time"

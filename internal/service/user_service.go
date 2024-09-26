@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"main/internal/domain/models"
+	"main/internal/models"
 	"main/internal/repository"
 	"strconv"
 

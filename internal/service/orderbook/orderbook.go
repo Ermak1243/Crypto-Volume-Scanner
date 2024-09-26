@@ -2,7 +2,7 @@ package orderbook
 
 import (
 	"fmt"
-	"main/internal/domain/models"
+	"main/internal/models"
 	"sort"
 	"sync"
 	"time"

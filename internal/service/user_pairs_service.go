@@ -2,8 +2,7 @@ package service
 
 import (
 	"context"
-	"log"
-	"main/internal/domain/models"
+	"main/internal/models"
 	"main/internal/repository"
 	"time"
 )
@@ -51,12 +50,9 @@ func NewUserPairsService(userPairsRepository repository.UserPairsRepository, tim
 // Returns:
 //   - An error if the operation fails; otherwise, nil.
 func (ups *userPairsService) Add(ctx context.Context, pairData models.UserPairs) error {
-	const op = directoryPath + "user_pairs_service.Add" // Operation identifier for logging
-
 	// Validate the pair data using a separate validation function.
 	if err := CheckPairData(pairData); err != nil {
-		log.Println(op, ": ", err) // Log validation error
-		return err                 // Return validation error
+		return err // Return validation error
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, ups.contextTimeout) // Set up context with timeout
@@ -80,12 +76,9 @@ func (ups *userPairsService) Add(ctx context.Context, pairData models.UserPairs)
 // Returns:
 //   - An error if the operation fails; otherwise, nil.
 func (ups *userPairsService) UpdateExactValue(ctx context.Context, pairData models.UserPairs) error {
-	const op = directoryPath + "user_pairs_service.UpdateExactValue" // Operation identifier for logging
-
 	// Validate the pair data before proceeding with the update.
 	if err := CheckPairData(pairData); err != nil {
-		log.Println(op, ": ", err) // Log validation error
-		return err                 // Return validation error
+		return err // Return validation error
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, ups.contextTimeout) // Set up context with timeout
@@ -109,20 +102,16 @@ func (ups *userPairsService) UpdateExactValue(ctx context.Context, pairData mode
 // Returns:
 //   - An error if validation fails or if the operation fails; otherwise, nil.
 func (ups *userPairsService) DeletePair(ctx context.Context, pairData models.UserPairs) error {
-	const op = directoryPath + "user_pairs_service.Delete" // Operation identifier for logging
-
 	// Validate that user ID is greater than zero.
 	if pairData.UserID < 1 {
-		err := errIdBelowOne       // Custom error indicating invalid user ID
-		log.Println(op, ": ", err) // Log validation error
-		return err                 // Return validation error
+		err := errIdBelowOne // Custom error indicating invalid user ID
+		return err           // Return validation error
 	}
 
 	// Validate that the pair name is not empty.
 	if pairData.Pair == "" {
-		err := errPairNameIsEmpty  // Custom error indicating empty pair name
-		log.Println(op, ": ", err) // Log validation error
-		return err                 // Return validation error
+		err := errPairNameIsEmpty // Custom error indicating empty pair name
+		return err                // Return validation error
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, ups.contextTimeout) // Set up context with timeout
@@ -145,12 +134,9 @@ func (ups *userPairsService) DeletePair(ctx context.Context, pairData models.Use
 // Returns:
 //   - A slice of UserPairs and an error if any occurs during retrieval.
 func (ups *userPairsService) GetAllUserPairs(ctx context.Context, userID int) ([]models.UserPairs, error) {
-	const op = directoryPath + "user_pairs_service.GetAllUserPairs" // Operation identifier for logging
-
 	userPairs, err := ups.userPairsRepository.GetAllUserPairs(ctx, userID)
 	if err != nil {
-		log.Println(op, ": ", err) // Log retrieval error
-		return userPairs, err      // Return empty slice and error if retrieval fails
+		return userPairs, err // Return empty slice and error if retrieval fails
 	}
 
 	return userPairs, nil // Return retrieved pairs if successful
@@ -165,12 +151,8 @@ func (ups *userPairsService) GetAllUserPairs(ctx context.Context, userID int) ([
 // Returns:
 //   - A slice of strings and an error if any occurs during retrieval.
 func (ups *userPairsService) GetPairsByExchange(ctx context.Context, exchange string) ([]string, error) {
-	const op = directoryPath + "user_pairs_service.GetPairsByExchange" // Operation identifier for logging
-
 	exchangePairs, err := ups.userPairsRepository.GetPairsByExchange(ctx, exchange)
 	if err != nil {
-		log.Println(op, ": ", err) // Log retrieval error
-
 		return exchangePairs, err // Return empty slice and error if retrieval fails
 	}
 

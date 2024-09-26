@@ -2,7 +2,7 @@ package service
 
 import (
 	"log"
-	"main/internal/domain/models"
+	"main/internal/models"
 	"strconv"
 
 	cmap "github.com/orcaman/concurrent-map/v2"

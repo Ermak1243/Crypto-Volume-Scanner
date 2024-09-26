@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"main/internal/domain/models" // Importing models for domain-specific data structures
-	"main/internal/service"       // Importing service layer for user and order book services
+	"main/internal/models"  // Importing models for domain-specific data structures
+	"main/internal/service" // Importing service layer for user and order book services
 	"main/internal/service/orderbook"
 
 	"strconv"

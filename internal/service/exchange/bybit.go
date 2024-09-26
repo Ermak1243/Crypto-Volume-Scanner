@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"main/internal/domain/models"
+	"main/internal/models"
 	"main/internal/service"
 	"main/internal/service/orderbook"
 

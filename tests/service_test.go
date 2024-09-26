@@ -2,7 +2,7 @@ package tests
 
 import (
 	"errors"
-	"main/internal/domain/models"
+	"main/internal/models"
 	"main/internal/service"
 	"testing"
 

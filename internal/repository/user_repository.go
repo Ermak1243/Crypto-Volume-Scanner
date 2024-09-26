@@ -3,8 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
-	"log"
-	"main/internal/domain/models" // Importing domain models for user data
+	"main/internal/models" // Importing domain models for user data
 
 	"github.com/jmoiron/sqlx" // Importing sqlx for database interactions
 )
@@ -43,7 +42,6 @@ func NewUserRepository(db *sqlx.DB) UserRepository {
 // It returns the newly created user's ID and an error if any occurs.
 func (ur *userRepository) InsertUser(ctx context.Context, user models.User) (int, error) {
 	const op = directoryPath + "user_repository.InsertUser" // Operation name for logging
-	errFn := repoError("InsertUser")                        // Error handling function
 
 	var clientID int // Variable to hold the newly created user's ID
 	query := fmt.Sprintf(`
@@ -67,9 +65,7 @@ func (ur *userRepository) InsertUser(ctx context.Context, user models.User) (int
 		user.SessionID,
 	) // Execute the SQL query and return the newly created user's ID
 	if err != nil {
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
-		return 0, errFn // Return zero ID and wrapped error
+		return 0, repoError(op) // Return zero ID and wrapped error
 	}
 
 	return clientID, nil // Return the newly created user's ID and nil if no errors occurred
@@ -79,7 +75,6 @@ func (ur *userRepository) InsertUser(ctx context.Context, user models.User) (int
 // It returns an error if any occurs.
 func (ur *userRepository) UpdatePassword(ctx context.Context, user models.User) error {
 	const op = directoryPath + "user_repository.UpdatePassword" // Operation name for logging
-	errFn := repoError("UpdatePassword")                        // Error handling function
 
 	query := fmt.Sprintf(`
 		UPDATE %s 
@@ -99,9 +94,7 @@ func (ur *userRepository) UpdatePassword(ctx context.Context, user models.User) 
 	) // Execute the SQL query with provided parameters
 	rowsAffected, _ := rows.RowsAffected() // Get the number of rows affected by the update
 	if err != nil || rowsAffected == 0 {   // Check for errors or if no rows were updated
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
-		return errFn // Return wrapped error
+		return repoError(op) // Return wrapped error
 	}
 
 	return nil // Return nil if no errors occurred
@@ -111,7 +104,6 @@ func (ur *userRepository) UpdatePassword(ctx context.Context, user models.User) 
 // It returns an error if any occurs.
 func (ur *userRepository) UpdateRefreshToken(ctx context.Context, user models.User) error {
 	const op = directoryPath + "user_repository.UpdateRefreshToken" // Operation name for logging
-	errFn := repoError("UpdateRefreshToken")                        // Error handling function
 
 	query := fmt.Sprintf(`
 		UPDATE %s 
@@ -129,9 +121,7 @@ func (ur *userRepository) UpdateRefreshToken(ctx context.Context, user models.Us
 	) // Execute the SQL query with provided parameters
 	rowsAffected, _ := rows.RowsAffected() // Get the number of rows affected by the update
 	if err != nil || rowsAffected == 0 {   // Check for errors or if no rows were updated
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
-		return errFn // Return wrapped error
+		return repoError(op) // Return wrapped error
 	}
 
 	return nil // Return nil if no errors occurred
@@ -141,16 +131,13 @@ func (ur *userRepository) UpdateRefreshToken(ctx context.Context, user models.Us
 // It returns the user and an error if any occurs.
 func (ur *userRepository) GetUserById(ctx context.Context, userID int) (models.User, error) {
 	const op = directoryPath + "user_repository.GetUserById" // Operation name for logging
-	errFn := repoError("GetUserById")                        // Error handling function
 	var user models.User                                     // Variable to hold retrieved user
 
 	query := fmt.Sprintf(`SELECT * FROM %s WHERE id=%d;`, userTable, userID) // SQL query string for selecting data
 
 	err := ur.db.GetContext(ctx, &user, query) // Execute the SQL query and scan results into the user variable
 	if err != nil {
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
-		return user, errFn // Return empty user and wrapped error
+		return user, repoError(op) // Return empty user and wrapped error
 	}
 
 	return user, nil // Return retrieved user and nil if no errors occurred
@@ -173,16 +160,13 @@ func (ur *userRepository) GetUserById(ctx context.Context, userID int) (models.U
 //     it returns nil for the error.
 func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (models.User, error) {
 	const op = directoryPath + "user_repository.GetUserByEmail" // Operation name for logging
-	errFn := repoError("GetUserByEmail")                        // Error handling function
 	var user models.User                                        // Variable to hold retrieved user
 
 	query := fmt.Sprintf(`SELECT * FROM %s WHERE email='%s';`, userTable, email) // SQL query string for selecting data
 
 	err := ur.db.GetContext(ctx, &user, query) // Execute the SQL query and scan results into the user variable
 	if err != nil {
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
-		return user, errFn // Return empty user and wrapped error
+		return user, repoError(op) // Return empty user and wrapped error
 	}
 
 	return user, nil // Return retrieved user and nil if no errors occurred
@@ -192,16 +176,13 @@ func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (mod
 // It returns a slice of IDs and an error if any occurs.
 func (ur *userRepository) GetAllIDs(ctx context.Context) ([]int, error) {
 	const op = directoryPath + "user_repository.GetAllIDs" // Operation name for logging
-	errFn := repoError("GetAllIDs")                        // Error handling function
 	var allIDs []int                                       // Slice to hold all retrieved IDs
 
 	query := fmt.Sprintf(`SELECT DISTINCT id FROM %s;`, userTable) // SQL query string for selecting distinct IDs
 
 	err := ur.db.SelectContext(ctx, &allIDs, query) // Execute the SQL query and scan results into allIDs slice
 	if err != nil {
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
-		return allIDs, errFn // Return empty slice and wrapped error
+		return allIDs, repoError(op) // Return empty slice and wrapped error
 	}
 
 	return allIDs, nil // Return retrieved IDs and nil if no errors occurred
@@ -211,7 +192,6 @@ func (ur *userRepository) GetAllIDs(ctx context.Context) ([]int, error) {
 // It returns an error if any occurs.
 func (ur *userRepository) DeleteUser(ctx context.Context, clientID int) error {
 	const op = directoryPath + "user_repository.DeleteUser" // Operation name for logging
-	errFn := repoError("DeleteUser")                        // Error handling function
 
 	query := fmt.Sprintf(`
         DELETE FROM %s 
@@ -220,9 +200,7 @@ func (ur *userRepository) DeleteUser(ctx context.Context, clientID int) error {
 	rows, err := ur.db.ExecContext(ctx, query, clientID) // Execute the SQL query with provided parameters
 	rowsAffected, _ := rows.RowsAffected()               // Get number of rows affected by delete operation
 	if err != nil || rowsAffected == 0 {                 // Check for errors or if no rows were deleted
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
-		return errFn // Return wrapped error
+		return repoError(op) // Return wrapped error
 	}
 
 	return nil // Return nil if no errors occurred

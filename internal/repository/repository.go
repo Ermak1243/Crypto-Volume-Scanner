@@ -8,6 +8,6 @@ const (
 	directoryPath  = "internal.repository."
 )
 
-var repoError = func(method string) error {
-	return fmt.Errorf("something went wrong while %s", method)
+var repoError = func(op string) error {
+	return fmt.Errorf("something went wrong in %s", op)
 }

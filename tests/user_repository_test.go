@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"main/internal/domain/models"
+	"main/internal/models"
 	"main/internal/repository"
 
 	"github.com/stretchr/testify/assert"

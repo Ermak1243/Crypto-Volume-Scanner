@@ -2,11 +2,12 @@ package controller
 
 import (
 	"context"
+	"log"
 	"math/rand"
 	"net/http"
 
-	"main/internal/domain/models" // Importing the models package for user data structures
-	"main/internal/service"       // Importing the service package for user and JWT services
+	"main/internal/models"  // Importing the models package for user data structures
+	"main/internal/service" // Importing the service package for user and JWT services
 	"main/internal/service/exchange"
 
 	"github.com/gofiber/fiber/v2" // Importing the Fiber framework for building web applications
@@ -63,12 +64,16 @@ func NewUserController(userService service.UserService, jwtService service.JwtSe
 // @Failure 500 {object} models.Response "Internal server error"
 // @Router /api/user/auth/signup [post]
 func (uc *userController) Signup(c *fiber.Ctx) error {
+	const op = directoryPath + "user_controller.Signup"
+
 	newUserData := models.UserAuth{} // Initialize a struct to hold new user data
 
 	c.Status(http.StatusBadRequest) // Set response status to Bad Request initially
 
 	// Parse the request body into the newUserData struct
 	if err := c.BodyParser(&newUserData); err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: err.Error(), // Return error message in JSON format if parsing fails
 		})
@@ -81,6 +86,8 @@ func (uc *userController) Signup(c *fiber.Ctx) error {
 
 	// Set the user's password using the provided password and handle any errors
 	if err := user.SetPassword(newUserData.Password); err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: err.Error(), // Return error message in JSON format if setting password fails
 		})
@@ -88,6 +95,8 @@ func (uc *userController) Signup(c *fiber.Ctx) error {
 
 	// Validate the user data (e.g., email format, etc.)
 	if err := service.CheckUserData(user); err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: err.Error(), // Return error message in JSON format if validation fails
 		})
@@ -100,6 +109,8 @@ func (uc *userController) Signup(c *fiber.Ctx) error {
 	// Insert the new user into the database and retrieve the user ID
 	userId, err := uc.userService.InsertUser(c.Context(), user)
 	if err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: err.Error(), // Return error message in JSON format if insertion fails
 		})
@@ -109,6 +120,8 @@ func (uc *userController) Signup(c *fiber.Ctx) error {
 
 	tokensData, err := uc.updateTokens(user)
 	if err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: err.Error(), // Return error message in JSON format if updating refresh token fails
 		})
@@ -137,6 +150,8 @@ func (uc *userController) Signup(c *fiber.Ctx) error {
 // @Failure 500 {object} models.Response "Internal server error"
 // @Router /api/user/auth/tokens [get]
 func (uc *userController) Tokens(c *fiber.Ctx) error {
+	const op = directoryPath + "user_controller.Tokens"
+
 	// Retrieve the user object from the context, which was set during authentication.
 	user := c.Locals("user").(models.User)
 
@@ -146,6 +161,8 @@ func (uc *userController) Tokens(c *fiber.Ctx) error {
 	// Compare the provided refresh token with the one stored for the user.
 	err := user.CompareRefreshToken(refreshToken)
 	if err != nil {
+		log.Println(op, err)
+
 		c.Status(http.StatusUnauthorized) // Set response status to Unauthorized (401)
 
 		return c.JSON(models.Response{
@@ -186,12 +203,16 @@ func (uc *userController) Tokens(c *fiber.Ctx) error {
 // @Failure 500 {object} models.Response "Internal server error"
 // @Router /api/user/auth/login [post]
 func (uc *userController) Login(c *fiber.Ctx) error {
+	const op = directoryPath + "user_controller.Login"
+
 	userDataRequest := models.UserAuth{} // Initialize a struct to hold user credentials
 
 	c.Status(http.StatusBadRequest) // Set response status to Bad Request initially
 
 	// Parse the request body into the userDataRequest struct
 	if err := c.BodyParser(&userDataRequest); err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: err.Error(), // Return error message in JSON format if parsing fails
 		})
@@ -200,6 +221,8 @@ func (uc *userController) Login(c *fiber.Ctx) error {
 	// Retrieve the user from the database using their email
 	userFromDB, err := uc.userService.GetUserByEmail(c.Context(), userDataRequest.Email)
 	if err != nil || userFromDB.Email != userDataRequest.Email {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: err.Error(), // Return error message in JSON format if user not found or email mismatch
 		})
@@ -207,6 +230,8 @@ func (uc *userController) Login(c *fiber.Ctx) error {
 
 	// Compare the provided password with the stored password for the user
 	if err := userFromDB.ComparePassword(userDataRequest.Password); err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: "invalid password", // Return error message in JSON format if password is invalid
 		})
@@ -214,6 +239,8 @@ func (uc *userController) Login(c *fiber.Ctx) error {
 
 	newTokens, err := uc.updateTokens(userFromDB)
 	if err != nil {
+		log.Println(op, err)
+
 		c.Status(http.StatusInternalServerError)
 
 		return c.JSON(models.Response{
@@ -248,12 +275,16 @@ func (uc *userController) Login(c *fiber.Ctx) error {
 // @Failure 500 {object} models.Response "Internal server error"
 // @Router /api/user/update-password [put]
 func (uc *userController) UpdatePassword(c *fiber.Ctx) error {
+	const op = directoryPath + "user_controller.UpdatePassword"
+
 	passwordData := models.PasswordUpdate{} // Initialize a struct to hold password update data
 
 	c.Status(http.StatusBadRequest) // Set response status to Bad Request initially
 
 	// Parse the request body into the passwordData struct
 	if err := c.BodyParser(&passwordData); err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: err.Error(), // Return error message in JSON format if parsing fails
 		})
@@ -264,6 +295,8 @@ func (uc *userController) UpdatePassword(c *fiber.Ctx) error {
 
 	// Compare the provided old password with the stored password for validation
 	if err := user.ComparePassword(passwordData.OldPassword); err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: "invalid old password", // Return error message in JSON format if old password is invalid
 		})
@@ -274,6 +307,8 @@ func (uc *userController) UpdatePassword(c *fiber.Ctx) error {
 	// Generate new access and refresh tokens for the user after updating their password
 	newTokens, sessionId, err := uc.generateTokens(user.ID)
 	if err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: "user update failed", // Return error message in JSON format if token generation fails
 		})
@@ -288,6 +323,8 @@ func (uc *userController) UpdatePassword(c *fiber.Ctx) error {
 	// Update the user's password in the database
 	err = uc.userService.UpdatePassword(c.Context(), user)
 	if err != nil {
+		log.Println(op, err)
+
 		return c.JSON(models.Response{
 			Result: "user update failed", // Return error message in JSON format if updating password fails
 		})
@@ -313,11 +350,15 @@ func (uc *userController) UpdatePassword(c *fiber.Ctx) error {
 // @Failure 500 {object} models.Response "Internal server error"
 // @Router /api/user [delete]
 func (uc *userController) DeleteUser(c *fiber.Ctx) error {
+	const op = directoryPath + "user_controller.DeleteUser"
+
 	user := c.Locals("user").(models.User) // Retrieve user ID from context locals
 
 	// Delete the user's account from the database using their ID.
 	err := uc.userService.DeleteUser(c.Context(), user.ID)
 	if err != nil {
+		log.Println(op, err)
+
 		c.Status(http.StatusInternalServerError) // Set response status to Internal Server Error
 
 		return c.JSON(models.Response{
@@ -329,6 +370,8 @@ func (uc *userController) DeleteUser(c *fiber.Ctx) error {
 
 	// Iterate over all exchanges and clear their subscribed pairs storage
 	for _, exchange := range uc.allExchangesStorage.All() {
+		log.Println(op, err)
+
 		exchange.ClearSubscribedPairsStorage()
 	}
 

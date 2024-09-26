@@ -22,8 +22,8 @@ package middleware
 
 import (
 	"log"
-	"main/internal/domain/models" // Importing models for data structures
-	"main/internal/service"       // Importing service layer for business logic
+	"main/internal/models"  // Importing models for data structures
+	"main/internal/service" // Importing service layer for business logic
 	"net/http"
 	"os"
 

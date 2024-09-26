@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"main/api/server/controller"
-	"main/internal/domain/models"
 	"main/internal/mocks"
+	"main/internal/models"
 	"main/internal/service/exchange"
 
 	"github.com/goccy/go-json"

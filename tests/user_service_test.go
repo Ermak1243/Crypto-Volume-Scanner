@@ -3,8 +3,8 @@ package tests
 import (
 	"context"
 	"errors"
-	"main/internal/domain/models"
 	"main/internal/mocks"
+	"main/internal/models"
 	"main/internal/service"
 	"strconv"
 	"testing"

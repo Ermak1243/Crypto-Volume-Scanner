@@ -3,8 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
-	"log"
-	"main/internal/domain/models" // Importing domain models for user pairs
+	"main/internal/models" // Importing domain models for user pairs
 
 	"github.com/jmoiron/sqlx" // Importing sqlx for database interactions
 )
@@ -41,7 +40,7 @@ func NewUserPairsRepository(db *sqlx.DB) UserPairsRepository {
 // It takes context and pair data as parameters and returns an error if any occurs.
 func (upr *userPairsRepository) Add(ctx context.Context, pairData models.UserPairs) error {
 	const op = directoryPath + "user_pairs_repository.Add" // Operation name for logging
-	errFn := repoError("Add")                              // Error handling function
+	errFn := repoError(op)                                 // Error handling function
 
 	queryString := fmt.Sprintf(`
 		INSERT INTO %s (
@@ -62,8 +61,6 @@ func (upr *userPairsRepository) Add(ctx context.Context, pairData models.UserPai
 		pairData.ExactValue,
 	) // Execute the SQL query with provided parameters
 	if err != nil {
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
 		return errFn // Return wrapped error
 	}
 
@@ -74,7 +71,7 @@ func (upr *userPairsRepository) Add(ctx context.Context, pairData models.UserPai
 // It takes context and pair data as parameters and returns an error if any occurs.
 func (upr *userPairsRepository) UpdateExactValue(ctx context.Context, pairData models.UserPairs) error {
 	const op = directoryPath + "user_pairs_repository.UpdateExactValue" // Operation name for logging
-	errFn := repoError("UpdateExactValue")                              // Error handling function
+	errFn := repoError(op)                                              // Error handling function
 
 	queryString := fmt.Sprintf(`
 		UPDATE %s 
@@ -92,8 +89,6 @@ func (upr *userPairsRepository) UpdateExactValue(ctx context.Context, pairData m
 	) // Execute the SQL query with provided parameters
 	rowsAffected, _ := rows.RowsAffected() // Get the number of rows affected by the update
 	if err != nil || rowsAffected == 0 {   // Check for errors or if no rows were updated
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
 		return errFn // Return wrapped error
 	}
 
@@ -104,7 +99,6 @@ func (upr *userPairsRepository) UpdateExactValue(ctx context.Context, pairData m
 // It takes context and user ID as parameters and returns a slice of UserPairs and an error if any occurs.
 func (upr *userPairsRepository) GetAllUserPairs(ctx context.Context, userID int) ([]models.UserPairs, error) {
 	const op = directoryPath + "user_pairs_repository.GetAllUserPairs" // Operation name for logging
-	errFn := repoError("GetAllUserPairs")                              // Error handling function
 	var userPairs []models.UserPairs                                   // Slice to hold retrieved user pairs
 
 	queryString := fmt.Sprintf(`
@@ -113,9 +107,7 @@ func (upr *userPairsRepository) GetAllUserPairs(ctx context.Context, userID int)
 
 	err := upr.db.SelectContext(ctx, &userPairs, queryString) // Execute the SQL query and scan results into the slice
 	if err != nil {
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
-		return userPairs, errFn // Return empty slice and wrapped error
+		return userPairs, repoError(op) // Return empty slice and wrapped error
 	}
 
 	return userPairs, nil // Return retrieved user pairs and nil if no errors occurred
@@ -125,7 +117,6 @@ func (upr *userPairsRepository) GetAllUserPairs(ctx context.Context, userID int)
 // It takes context and exchange name as parameters and returns a slice of strings and an error if any occurs.
 func (upr *userPairsRepository) GetPairsByExchange(ctx context.Context, exchange string) ([]string, error) {
 	const op = directoryPath + "user_pairs_repository.GetPairsByExchange" // Operation name for logging
-	errFn := repoError("GetPairsByExchange")                              // Error handling function
 	var exchangePairs []string                                            // Slice to hold retrieved user pairs
 
 	queryString := fmt.Sprintf(`
@@ -134,9 +125,7 @@ func (upr *userPairsRepository) GetPairsByExchange(ctx context.Context, exchange
 
 	err := upr.db.SelectContext(ctx, &exchangePairs, queryString) // Execute the SQL query and scan results into the slice
 	if err != nil {
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
-		return exchangePairs, errFn // Return empty slice and wrapped error
+		return exchangePairs, repoError(op) // Return empty slice and wrapped error
 	}
 
 	return exchangePairs, nil // Return retrieved user pairs and nil if no errors occurred
@@ -146,7 +135,6 @@ func (upr *userPairsRepository) GetPairsByExchange(ctx context.Context, exchange
 // It takes context and pair data as parameters and returns an error if any occurs.
 func (upr *userPairsRepository) DeletePair(ctx context.Context, pairData models.UserPairs) error {
 	const op = directoryPath + "user_pairs_repository.DeletePair" // Operation name for logging
-	errFn := repoError("DeletePair")                              // Error handling function
 
 	queryString := fmt.Sprintf(`
 		DELETE FROM %s 
@@ -161,9 +149,7 @@ func (upr *userPairsRepository) DeletePair(ctx context.Context, pairData models.
 	) // Execute the SQL query with provided parameters
 	rowsAffected, _ := rows.RowsAffected() // Get the number of rows affected by the delete operation
 	if err != nil || rowsAffected == 0 {   // Check for errors or if no rows were deleted
-		log.Println(op, ": ", err) // Log any errors that occur during execution
-
-		return errFn // Return wrapped error
+		return repoError(op) // Return wrapped error
 	}
 
 	return nil // Return nil if no errors occurred
