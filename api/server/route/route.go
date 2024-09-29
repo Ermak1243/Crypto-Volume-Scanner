@@ -23,9 +23,9 @@ Example usage of this package can be seen in the main application file where the
 package route
 
 import (
-	"main/api/server/middleware" // Importing middleware for route protection
-	"main/internal/service"      // Importing services for business logic
-	"main/internal/service/exchange"
+	"cvs/api/server/middleware" // Importing middleware for route protection
+	"cvs/internal/service"      // Importing services for business logic
+	"cvs/internal/service/exchange"
 
 	"github.com/gofiber/fiber/v2" // Importing Fiber framework
 )

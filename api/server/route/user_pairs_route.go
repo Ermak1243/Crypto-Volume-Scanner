@@ -1,9 +1,9 @@
 package route
 
 import (
-	"main/api/server/controller" // Importing the controller package for handling user pair operations
-	"main/internal/service"      // Importing service layer for business logic related to user pairs
-	"main/internal/service/exchange"
+	"cvs/api/server/controller" // Importing the controller package for handling user pair operations
+	"cvs/internal/service"      // Importing service layer for business logic related to user pairs
+	"cvs/internal/service/exchange"
 
 	"github.com/gofiber/fiber/v2" // Importing Fiber framework for web server
 )

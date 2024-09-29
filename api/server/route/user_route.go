@@ -1,10 +1,10 @@
 package route
 
 import (
-	"main/api/server/controller" // Importing the controller package for handling requests
-	"main/api/server/middleware" // Importing middleware for request authentication
-	"main/internal/service"      // Importing service layer for business logic
-	"main/internal/service/exchange"
+	"cvs/api/server/controller" // Importing the controller package for handling requests
+	"cvs/api/server/middleware" // Importing middleware for request authentication
+	"cvs/internal/service"      // Importing service layer for business logic
+	"cvs/internal/service/exchange"
 
 	"github.com/gofiber/fiber/v2" // Importing Fiber framework for web server
 )

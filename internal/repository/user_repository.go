@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
+	"cvs/internal/models" // Importing domain models for user data
 	"fmt"
-	"main/internal/models" // Importing domain models for user data
 
 	"github.com/jmoiron/sqlx" // Importing sqlx for database interactions
 )

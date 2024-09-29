@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"main/internal/models"
-	"main/internal/repository"
+	"cvs/internal/models"
+	"cvs/internal/repository"
 	"strconv"
 
 	"time"

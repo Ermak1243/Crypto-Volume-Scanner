@@ -1,9 +1,9 @@
 package tests
 
 import (
+	"cvs/internal/models"
+	"cvs/internal/service"
 	"errors"
-	"main/internal/models"
-	"main/internal/service"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

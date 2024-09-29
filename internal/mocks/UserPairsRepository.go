@@ -4,7 +4,7 @@ package mocks
 
 import (
 	context "context"
-	models "main/internal/models"
+	models "cvs/internal/models"
 
 	mock "github.com/stretchr/testify/mock"
 )

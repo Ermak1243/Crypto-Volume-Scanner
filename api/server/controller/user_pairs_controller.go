@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"main/internal/models"
-	"main/internal/service"
-	"main/internal/service/exchange"
+	"cvs/internal/models"
+	"cvs/internal/service"
+	"cvs/internal/service/exchange"
 
 	"github.com/gofiber/fiber/v2"
 )

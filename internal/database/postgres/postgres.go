@@ -2,9 +2,9 @@ package postgres
 
 import (
 	"context"
+	"cvs/internal/config"
 	"fmt"
 	"log"
-	"main/internal/config"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"

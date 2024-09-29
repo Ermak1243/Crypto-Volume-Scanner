@@ -9,10 +9,10 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"main/api/server/controller"
-	"main/internal/mocks"
-	"main/internal/models"
-	"main/internal/service/exchange"
+	"cvs/api/server/controller"
+	"cvs/internal/mocks"
+	"cvs/internal/models"
+	"cvs/internal/service/exchange"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"

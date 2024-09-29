@@ -1,8 +1,8 @@
 package service
 
 import (
+	"cvs/internal/models"
 	"errors"
-	"main/internal/models"
 	"regexp"
 )
 

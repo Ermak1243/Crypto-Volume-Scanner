@@ -1,6 +1,6 @@
 package main
 
-import "main/internal/app"
+import "cvs/internal/app"
 
 func main() {
 	app.Run()

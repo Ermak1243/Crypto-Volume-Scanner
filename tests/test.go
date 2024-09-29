@@ -2,10 +2,10 @@ package tests
 
 import (
 	"context"
+	"cvs/internal/config"
+	"cvs/internal/database/postgres"
+	"cvs/internal/service"
 	"fmt"
-	"main/internal/config"
-	"main/internal/database/postgres"
-	"main/internal/service"
 	"time"
 
 	"github.com/jmoiron/sqlx"

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"main/internal/models"
-	"main/internal/repository"
+	"cvs/internal/models"
+	"cvs/internal/repository"
 
 	"github.com/stretchr/testify/assert"
 )

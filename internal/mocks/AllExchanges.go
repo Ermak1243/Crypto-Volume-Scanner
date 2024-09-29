@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	exchange "main/internal/service/exchange"
+	exchange "cvs/internal/service/exchange"
 
 	mock "github.com/stretchr/testify/mock"
 )

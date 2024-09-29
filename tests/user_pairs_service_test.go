@@ -2,10 +2,10 @@ package tests
 
 import (
 	"context"
+	"cvs/internal/mocks"
+	"cvs/internal/models"
+	"cvs/internal/service"
 	"errors"
-	"main/internal/mocks"
-	"main/internal/models"
-	"main/internal/service"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

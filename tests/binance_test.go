@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"main/internal/mocks"
-	"main/internal/service/exchange"
+	"cvs/internal/mocks"
+	"cvs/internal/service/exchange"
 
 	"testing" // Importing the testing package for writing tests
 

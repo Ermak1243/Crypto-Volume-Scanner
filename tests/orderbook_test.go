@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"main/internal/service/orderbook"
+	"cvs/internal/service/orderbook"
 	"sync"
 	"testing"
 

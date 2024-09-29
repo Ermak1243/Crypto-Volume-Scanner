@@ -21,9 +21,9 @@ Example usage of this package can be seen in the main application file where the
 package middleware
 
 import (
+	"cvs/internal/models"  // Importing models for data structures
+	"cvs/internal/service" // Importing service layer for business logic
 	"log"
-	"main/internal/models"  // Importing models for data structures
-	"main/internal/service" // Importing service layer for business logic
 	"net/http"
 	"os"
 

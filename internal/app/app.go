@@ -2,13 +2,13 @@ package app
 
 import (
 	"context"
+	"cvs/api/server/route"           // Importing routing setup for the API
+	"cvs/internal/config"            // Importing configuration management
+	"cvs/internal/database/postgres" // Importing PostgreSQL database management
+	"cvs/internal/repository"        // Importing repository interfaces and implementations
+	"cvs/internal/service"           // Importing service layer for business logic
+	"cvs/internal/service/exchange"  // Importing exchange service for trading functionality
 	"log"
-	"main/api/server/route"           // Importing routing setup for the API
-	"main/internal/config"            // Importing configuration management
-	"main/internal/database/postgres" // Importing PostgreSQL database management
-	"main/internal/repository"        // Importing repository interfaces and implementations
-	"main/internal/service"           // Importing service layer for business logic
-	"main/internal/service/exchange"  // Importing exchange service for trading functionality
 	"os"
 	"os/signal"
 	"time"

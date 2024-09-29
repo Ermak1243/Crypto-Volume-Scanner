@@ -6,9 +6,9 @@ import (
 	"math/rand"
 	"net/http"
 
-	"main/internal/models"  // Importing the models package for user data structures
-	"main/internal/service" // Importing the service package for user and JWT services
-	"main/internal/service/exchange"
+	"cvs/internal/models"  // Importing the models package for user data structures
+	"cvs/internal/service" // Importing the service package for user and JWT services
+	"cvs/internal/service/exchange"
 
 	"github.com/gofiber/fiber/v2" // Importing the Fiber framework for building web applications
 )

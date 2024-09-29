@@ -2,9 +2,9 @@ package tests
 
 import (
 	"context"
+	"cvs/internal/models"
+	"cvs/internal/repository"
 	"fmt"
-	"main/internal/models"
-	"main/internal/repository"
 	"testing"
 	"time"
 

@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"main/internal/models"
-	"main/internal/service"
-	"main/internal/service/orderbook"
+	"cvs/internal/models"
+	"cvs/internal/service"
+	"cvs/internal/service/orderbook"
 
 	"github.com/goccy/go-json"
 	cmap "github.com/orcaman/concurrent-map/v2"

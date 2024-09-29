@@ -1,8 +1,8 @@
 package service
 
 import (
+	"cvs/internal/models"
 	"log"
-	"main/internal/models"
 	"strconv"
 
 	cmap "github.com/orcaman/concurrent-map/v2"

@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"main/api/server/controller"
-	"main/internal/mocks"
-	"main/internal/models"
-	"main/internal/service/exchange"
+	"cvs/api/server/controller"
+	"cvs/internal/mocks"
+	"cvs/internal/models"
+	"cvs/internal/service/exchange"
 
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
