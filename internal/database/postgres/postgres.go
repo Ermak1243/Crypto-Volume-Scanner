@@ -63,6 +63,8 @@ func (s *postgres) Migration() {
 			exact_value integer NOT NULL CHECK (exact_value > 0),
 			UNIQUE (user_id, exchange, pair)  
 		);
+
+		CREATE INDEX idx_user_pairs_user_id ON user_pairs(user_id);
 	`)
 	if err != nil {
 		fmt.Println("Migration error! ", err)
