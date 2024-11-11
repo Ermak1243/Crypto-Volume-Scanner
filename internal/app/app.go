@@ -2,20 +2,21 @@ package app
 
 import (
 	"context"
+	"cvs/api/server/middleware"
 	"cvs/api/server/route"           // Importing routing setup for the API
 	"cvs/internal/config"            // Importing configuration management
 	"cvs/internal/database/postgres" // Importing PostgreSQL database management
 	"cvs/internal/repository"        // Importing repository interfaces and implementations
 	"cvs/internal/service"           // Importing service layer for business logic
 	"cvs/internal/service/exchange"  // Importing exchange service for trading functionality
-	"log"
+	"cvs/internal/service/logger"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/goccy/go-json" // Importing JSON encoding/decoding library
 
-	"github.com/gofiber/fiber/v2" // Importing Fiber web framework
+	"github.com/gofiber/fiber/v2"
 )
 
 var (
@@ -25,7 +26,8 @@ var (
 
 // Run initializes and starts the application.
 func Run() {
-	cfg := config.NewConfig("./configs/config.yaml") // Load configuration from YAML file
+	// cfg := config.NewConfig("./configs/config.yaml")
+	cfg := config.NewConfig("configs/config.yaml")
 
 	// Initialize the PostgreSQL database connection
 	postgresStorage := postgres.NewPostgresDB(cfg.Postgres)
@@ -45,8 +47,10 @@ func Run() {
 	jwtService := service.NewJwtService(cfg.JwtSecretKey, time.Duration(cfg.AccessTokenLifetimeHours), time.Duration(cfg.RefreshTokenLifetimeHours)) // Service for managing JWT tokens
 	foundVolumeService := service.NewFoundVolumesService()                                                                                           // Service with found volumes storage                                                                                        // Service for storing found volumes
 	userService.GetUsersIdFromDB(ctx)
-	allExchangesStorage := exchange.NewAllExchangesService() // Initialize the AllExchanges service
-	// Preload user IDs from the database
+
+	appLogger := logger.NewApiLogger(cfg)
+	appLogger.InitLogger()
+	allExchangesStorage := exchange.NewAllExchangesService(appLogger) // Initialize the AllExchanges service
 
 	// Initialize exchanges and their services
 	exchange.InitAllExchanges(
@@ -55,6 +59,7 @@ func Run() {
 		httpRequestService,
 		foundVolumeService,
 		allExchangesStorage,
+		appLogger,
 	)
 
 	fiber := fiber.New(fiber.Config{
@@ -62,6 +67,7 @@ func Run() {
 		JSONDecoder: json.Unmarshal, // Set custom JSON decoder for requests
 		Immutable:   true,           // Enable immutable routes (for performance)
 	})
+	middleware.MiddlewaresSetup(fiber)
 
 	// Setup routes for the Fiber application with provided services
 	route.Setup(
@@ -71,6 +77,7 @@ func Run() {
 		jwtService,
 		foundVolumeService,
 		allExchangesStorage,
+		appLogger,
 	)
 
 	// Channel for processing interrupt signals (e.g., Ctrl+C)
@@ -79,11 +86,11 @@ func Run() {
 
 	go func() {
 		<-c // Wait for an interrupt signal
-		log.Println("Gracefully shutting down...")
+		appLogger.Info("Gracefully shutting down...")
 		fiber.Shutdown() // Shutdown the Fiber server gracefully
 	}()
 
 	if err := fiber.Listen(cfg.ServerPort); err != nil {
-		log.Fatal(err) // Log fatal error if server fails to start
+		appLogger.Fatal(err)
 	}
 }

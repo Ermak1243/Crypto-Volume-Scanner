@@ -2,7 +2,6 @@ package service
 
 import (
 	"cvs/internal/models"
-	"log"
 	"strconv"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -103,14 +102,11 @@ func (fvs *foundVolumesService) DeleteFoundVolume(userPairData models.UserPairs)
 // Returns:
 //   - A slice of FoundVolume and an error if any occurs during retrieval.
 func (fvs *foundVolumesService) GetAllFoundVolume(userID int) ([]models.FoundVolume, error) {
-	const op = directoryPath + "found_volumes_service.GetAllFoundVolume" // Operation identifier for logging
 	var volumesToReturn []models.FoundVolume
 
 	userFoundVolumes, ok := fvs.foundVolumesData.Get(strconv.Itoa(userID)) // Retrieve cached data for the user ID
 	if !ok {
 		err := errGettingFoundVolume // Custom error indicating failure to get found volume
-
-		log.Println(op, ": ", err) // Log the error
 
 		return volumesToReturn, err // Return empty slice and error if not found
 	}

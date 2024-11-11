@@ -1,7 +1,7 @@
 package exchange
 
 import (
-	"fmt"
+	"cvs/internal/service/logger"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
@@ -18,13 +18,15 @@ type AllExchanges interface {
 // It holds a concurrent map to store exchange instances.
 type allExchanges struct {
 	exchanges cmap.ConcurrentMap[string, Exchange] // Concurrent map storing exchanges by their names
+	logger    logger.Logger
 }
 
 // NewAllExchangesService creates a new instance of allExchanges.
 // It initializes the concurrent map for storing exchange instances.
-func NewAllExchangesService() AllExchanges {
+func NewAllExchangesService(logger logger.Logger) AllExchanges {
 	return &allExchanges{
 		exchanges: cmap.New[Exchange](), // Initialize the concurrent map for exchanges
+		logger:    logger,
 	}
 }
 
@@ -39,7 +41,7 @@ func (ae *allExchanges) Add(exchange Exchange) {
 func (ae *allExchanges) Get(exchangeName string) Exchange {
 	exchange, exists := ae.exchanges.Get(exchangeName) // Attempt to retrieve the exchange from the map
 	if !exists {
-		fmt.Printf("exchange with name %s does not exist in AllExchanges storage", exchangeName) // Log message if not found
+		ae.logger.Errorf("exchange with name %s does not exist in AllExchanges storage", exchangeName)
 	}
 
 	return exchange // Return the retrieved exchange (or nil if not found)

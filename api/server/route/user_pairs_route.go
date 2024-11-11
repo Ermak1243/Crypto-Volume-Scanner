@@ -4,6 +4,7 @@ import (
 	"cvs/api/server/controller" // Importing the controller package for handling user pair operations
 	"cvs/internal/service"      // Importing service layer for business logic related to user pairs
 	"cvs/internal/service/exchange"
+	"cvs/internal/service/logger"
 
 	"github.com/gofiber/fiber/v2" // Importing Fiber framework for web server
 )
@@ -39,8 +40,15 @@ func NewUserPairsRouter(
 	userService service.UserService,
 	foundVolumesService service.FoundVolumesService,
 	allExchangesStorage exchange.AllExchanges,
+	logger logger.Logger,
 ) {
-	upc := controller.NewUserPairsController(userPairsService, userService, foundVolumesService, allExchangesStorage) // Create a new instance of UserPairsController
+	upc := controller.NewUserPairsController(
+		userPairsService,
+		userService,
+		foundVolumesService,
+		allExchangesStorage,
+		logger,
+	) // Create a new instance of UserPairsController
 
 	// Define routes for managing user pairs
 	group.Post("/add", upc.Add)                            // Route for adding a new user pair

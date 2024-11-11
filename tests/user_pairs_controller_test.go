@@ -31,6 +31,7 @@ func TestAddPairController(t *testing.T) {
 			userMock *mocks.UserService,
 			allExchangesMock *mocks.AllExchanges,
 			mockExchange *mocks.Exchange,
+			mockLogger *mocks.Logger,
 		) // Function to set up mock behavior
 		expectedCode int // Expected HTTP status code after the request
 	}{
@@ -47,6 +48,7 @@ func TestAddPairController(t *testing.T) {
 				userMock *mocks.UserService,
 				allExchangesMock *mocks.AllExchanges,
 				mockExchange *mocks.Exchange,
+				mockLogger *mocks.Logger,
 			) {
 				userPairsMock.On("Add", mock.Anything, mock.Anything).Return(nil) // Mock successful addition
 				userMock.On("SetUserIdIntoMemory", mock.Anything).Return(nil)     // Mock successful addition
@@ -68,8 +70,10 @@ func TestAddPairController(t *testing.T) {
 				userMock *mocks.UserService,
 				allExchangesMock *mocks.AllExchanges,
 				mockExchange *mocks.Exchange,
+				mockLogger *mocks.Logger,
 			) {
 				userPairsMock.On("Add", mock.Anything, mock.Anything).Return(errors.New("service error")) // Mock error during addition
+				mockLogger.On("Error", mock.Anything).Return(nil)
 			},
 			expectedCode: http.StatusInternalServerError, // Expecting 500 Internal Server Error status due to service error
 		},
@@ -87,10 +91,23 @@ func TestAddPairController(t *testing.T) {
 			mockUserService := mocks.NewUserService(t)           // Create a new mock User service
 			mockAllExchangesStorage := mocks.NewAllExchanges(t)  // Create a new mock AllExchanges storage
 			mockExchange := mocks.NewExchange(t)                 // Create a new mock Exchange instance
+			mockLogger := mocks.NewLogger(t)
 
-			tc.mocksSetup(mockUserPairsService, mockUserService, mockAllExchangesStorage, mockExchange) // Setup mocks for the current test case
+			tc.mocksSetup(
+				mockUserPairsService,
+				mockUserService,
+				mockAllExchangesStorage,
+				mockExchange,
+				mockLogger,
+			) // Setup mocks for the current test case
 
-			userPairsController := controller.NewUserPairsController(mockUserPairsService, mockUserService, nil, mockAllExchangesStorage)
+			userPairsController := controller.NewUserPairsController(
+				mockUserPairsService,
+				mockUserService,
+				nil,
+				mockAllExchangesStorage,
+				mockLogger,
+			)
 
 			app.Post("/api/user/pairs", func(c *fiber.Ctx) error {
 				c.Locals("user", models.User{ID: tc.userID}) // Add user to context locals
@@ -113,11 +130,11 @@ func TestUpdateExactValueController(t *testing.T) {
 	t.Parallel() // Allows this test to run in parallel with other tests
 
 	tests := []struct {
-		name         string                                 // Name of the test case
-		userID       int                                    // User ID for updating the pair
-		pairData     models.UserPairs                       // Input data for updating the user pair
-		mocksSetup   func(userMock *mocks.UserPairsService) // Function to set up mock behavior
-		expectedCode int                                    // Expected HTTP status code after the request
+		name         string                                                           // Name of the test case
+		userID       int                                                              // User ID for updating the pair
+		pairData     models.UserPairs                                                 // Input data for updating the user pair
+		mocksSetup   func(userMock *mocks.UserPairsService, mockLogger *mocks.Logger) // Function to set up mock behavior
+		expectedCode int                                                              // Expected HTTP status code after the request
 	}{
 		{
 			name:   "Successful Update",
@@ -127,7 +144,7 @@ func TestUpdateExactValueController(t *testing.T) {
 				Pair:       "BTC-ETH",
 				ExactValue: 100, // Assuming there's a Value field to update
 			},
-			mocksSetup: func(userPairsMock *mocks.UserPairsService) {
+			mocksSetup: func(userPairsMock *mocks.UserPairsService, mockLogger *mocks.Logger) {
 				userPairsMock.On("UpdateExactValue", mock.Anything, mock.Anything).Return(nil) // Mock successful update
 			},
 			expectedCode: http.StatusOK, // Expecting 200 OK status
@@ -140,8 +157,9 @@ func TestUpdateExactValueController(t *testing.T) {
 				Pair:       "BTC-ETH",
 				ExactValue: 100,
 			},
-			mocksSetup: func(userPairsMock *mocks.UserPairsService) {
+			mocksSetup: func(userPairsMock *mocks.UserPairsService, mockLogger *mocks.Logger) {
 				userPairsMock.On("UpdateExactValue", mock.Anything, mock.Anything).Return(errors.New("update error")) // Mock error during update
+				mockLogger.On("Error", mock.Anything).Return(nil)
 			},
 			expectedCode: http.StatusInternalServerError, // Expecting 500 Internal Server Error status due to update failure
 		},
@@ -158,10 +176,17 @@ func TestUpdateExactValueController(t *testing.T) {
 			mockUserPairsService := mocks.NewUserPairsService(t) // Create a new mock UserPairs service
 			mockUserService := mocks.NewUserService(t)           // Create a new mock User service
 			mockAllExchangesStorage := mocks.NewAllExchanges(t)  // Create a new mock AllExchanges storage
+			mockLogger := mocks.NewLogger(t)
 
-			tc.mocksSetup(mockUserPairsService) // Setup mocks for the current test case
+			tc.mocksSetup(mockUserPairsService, mockLogger) // Setup mocks for the current test case
 
-			userPairsController := controller.NewUserPairsController(mockUserPairsService, mockUserService, nil, mockAllExchangesStorage)
+			userPairsController := controller.NewUserPairsController(
+				mockUserPairsService,
+				mockUserService,
+				nil,
+				mockAllExchangesStorage,
+				mockLogger,
+			)
 
 			app.Put("/api/user/pairs", func(c *fiber.Ctx) error {
 				c.Locals("user", models.User{ID: tc.userID})   // Add user to context locals
@@ -184,15 +209,15 @@ func TestGetAllUserPairsController(t *testing.T) {
 	t.Parallel() // Allows this test to run in parallel with other tests
 
 	tests := []struct {
-		name         string                                 // Name of the test case
-		userID       int                                    // User ID for which to retrieve pairs
-		mocksSetup   func(userMock *mocks.UserPairsService) // Function to set up mock behavior
-		expectedCode int                                    // Expected HTTP status code after the request
+		name         string                                                           // Name of the test case
+		userID       int                                                              // User ID for which to retrieve pairs
+		mocksSetup   func(userMock *mocks.UserPairsService, mockLogger *mocks.Logger) // Function to set up mock behavior
+		expectedCode int                                                              // Expected HTTP status code after the request
 	}{
 		{
 			name:   "Successful Retrieval",
 			userID: 1,
-			mocksSetup: func(userPairsMock *mocks.UserPairsService) {
+			mocksSetup: func(userPairsMock *mocks.UserPairsService, mockLogger *mocks.Logger) {
 				userPairsMock.On("GetAllUserPairs", mock.Anything, 1).Return([]models.UserPairs{
 					{UserID: 1, Pair: "BTC-ETH"},
 					{UserID: 1, Pair: "ETH-LTC"},
@@ -203,8 +228,9 @@ func TestGetAllUserPairsController(t *testing.T) {
 		{
 			name:   "Error Retrieving User Pairs",
 			userID: 1,
-			mocksSetup: func(userPairsMock *mocks.UserPairsService) {
+			mocksSetup: func(userPairsMock *mocks.UserPairsService, mockLogger *mocks.Logger) {
 				userPairsMock.On("GetAllUserPairs", mock.Anything, 1).Return(nil, errors.New("retrieve error")) // Mock error during retrieval
+				mockLogger.On("Error", mock.Anything).Return(nil)
 			},
 			expectedCode: http.StatusInternalServerError, // Expecting 500 Internal Server Error status due to retrieval failure
 		},
@@ -221,10 +247,17 @@ func TestGetAllUserPairsController(t *testing.T) {
 			mockUserPairsService := mocks.NewUserPairsService(t) // Create a new mock UserPairs service
 			mockUserService := mocks.NewUserService(t)           // Create a new mock User service
 			mockAllExchangesStorage := mocks.NewAllExchanges(t)  // Create a new mock AllExchanges storage
+			mockLogger := mocks.NewLogger(t)
 
-			tc.mocksSetup(mockUserPairsService) // Setup mocks for the current test case
+			tc.mocksSetup(mockUserPairsService, mockLogger) // Setup mocks for the current test case
 
-			userPairsController := controller.NewUserPairsController(mockUserPairsService, mockUserService, nil, mockAllExchangesStorage)
+			userPairsController := controller.NewUserPairsController(
+				mockUserPairsService,
+				mockUserService,
+				nil,
+				mockAllExchangesStorage,
+				mockLogger,
+			)
 
 			app.Get("/api/user/pairs", func(c *fiber.Ctx) error {
 				c.Locals("user", models.User{ID: tc.userID})  // Add user to context locals
@@ -253,6 +286,7 @@ func TestDeletePairController(t *testing.T) {
 			userMock *mocks.UserService,
 			allExchangesMock *mocks.AllExchanges,
 			mockExchange *mocks.Exchange,
+			mockLogger *mocks.Logger,
 			mockFoundVolumes *mocks.FoundVolumesService,
 		) // Function to set up mock behavior
 		expectedCode int // Expected HTTP status code after the request
@@ -266,6 +300,7 @@ func TestDeletePairController(t *testing.T) {
 				userMock *mocks.UserService,
 				allExchangesMock *mocks.AllExchanges,
 				mockExchange *mocks.Exchange,
+				mockLogger *mocks.Logger,
 				mockFoundVolumes *mocks.FoundVolumesService,
 			) {
 				mockExchange.On("DeletePairFromSubscribedPairs", "BTC-ETH").Return()
@@ -286,8 +321,10 @@ func TestDeletePairController(t *testing.T) {
 				userMock *mocks.UserService,
 				allExchangesMock *mocks.AllExchanges,
 				mockExchange *mocks.Exchange,
+				mockLogger *mocks.Logger,
 				mockFoundVolumes *mocks.FoundVolumesService,
 			) {
+				mockLogger.On("Error", mock.Anything).Return(nil)
 				userPairsMock.On("DeletePair", mock.Anything, mock.Anything).Return(errors.New("delete error")) // Mock error during deletion
 			},
 			expectedCode: http.StatusInternalServerError, // Expecting 500 Internal Server Error status due to deletion failure
@@ -307,15 +344,24 @@ func TestDeletePairController(t *testing.T) {
 			mockAllExchangesStorage := mocks.NewAllExchanges(t)        // Create a new mock AllExchanges storage
 			mockFoundVolumesService := mocks.NewFoundVolumesService(t) // Create a new mock FoundVolumes service
 			mockExchange := mocks.NewExchange(t)                       // Create a new mock Exchange instance
+			mockLogger := mocks.NewLogger(t)
 
 			tc.mocksSetup(
 				mockUserPairsService,
 				mockUserService,
 				mockAllExchangesStorage,
 				mockExchange,
-				mockFoundVolumesService) // Setup mocks for the current test case
+				mockLogger,
+				mockFoundVolumesService,
+			) // Setup mocks for the current test case
 
-			userPairsController := controller.NewUserPairsController(mockUserPairsService, mockUserService, mockFoundVolumesService, mockAllExchangesStorage)
+			userPairsController := controller.NewUserPairsController(
+				mockUserPairsService,
+				mockUserService,
+				mockFoundVolumesService,
+				mockAllExchangesStorage,
+				mockLogger,
+			)
 
 			app.Delete("/api/user/pairs", func(c *fiber.Ctx) error {
 				c.Locals("user", models.User{ID: tc.userID}) // Add user to context locals

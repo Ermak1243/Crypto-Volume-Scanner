@@ -6,6 +6,7 @@ import (
 
 	"cvs/internal/models"
 	"cvs/internal/service"
+	"cvs/internal/service/logger"
 	"cvs/internal/service/orderbook"
 
 	"github.com/goccy/go-json"
@@ -79,7 +80,7 @@ func NewBybit(
 	userPairsService service.UserPairsService,
 	httpRequestService service.HttpRequest,
 	foundVolumeService service.FoundVolumesService,
-	allExchangesStorage AllExchanges,
+	logger logger.Logger,
 ) []Exchange {
 	var bybits []Exchange // Slice to hold instances of different Bybit exchanges
 	initFunctions := []func(exchangesData *ExchangeData) *ExchangeData{
@@ -93,7 +94,7 @@ func NewBybit(
 			userPairsService,
 			httpRequestService,
 			foundVolumeService,
-			allExchangesStorage,
+			logger,
 		)
 
 		bybits = append(bybits, function(exchangeData))
@@ -121,14 +122,14 @@ func setBybitOverallData(
 	userPairsService service.UserPairsService,
 	httpRequestService service.HttpRequest,
 	foundVolumeService service.FoundVolumesService,
-	allExchangesStorage AllExchanges,
+	logger logger.Logger,
 ) *ExchangeData {
 	bybitExchangesData := ExchangeData{
 		userService:            userService,
 		userPairsService:       userPairsService,
 		httpRequestService:     httpRequestService,
 		foundVolumesService:    foundVolumeService,
-		allExchangesStorage:    allExchangesStorage,
+		logger:                 logger,
 		pairsJsonModel:         bybitPairsJsonModel,              // Set pairs JSON model for exchanges
 		orderbookJsonModel:     bybitOrderbookJsonModel,          // Set orderbook JSON model for exchanges
 		urlFormatter:           bybitUrlFormatter,                // Set URL formatter function for exchanges

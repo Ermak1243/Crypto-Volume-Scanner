@@ -4,24 +4,36 @@ import (
 	"context"
 	"cvs/internal/models"  // Importing models for domain-specific data structures
 	"cvs/internal/service" // Importing service layer for user and order book services
+	"cvs/internal/service/logger"
 	"cvs/internal/service/orderbook"
 	"fmt"
 	"io"
-	"log"
 
 	"strconv"
 	"sync"
 	"time"
 
-	// Importing JSON library for marshaling and unmarshaling
 	cmap "github.com/orcaman/concurrent-map/v2" // Importing concurrent map for thread-safe storage
+	"go.uber.org/zap"
 )
 
-const directoryPath = "internal.service.exchange." // Path for logging operations
-
 var (
+	AllExchangesStorage AllExchanges // All exchanges storage
+
 	errUnmarshal = func(dataType, exchange string) error {
 		return fmt.Errorf("response unmarshal error: %s %s", exchange, dataType) // Error for unmarshalling failures
+	}
+	errExchange = func(
+		logger logger.Logger,
+		msg,
+		exchangeName,
+		url string,
+	) {
+		logger.Error(
+			msg,
+			zap.String("exchange", exchangeName),
+			zap.String("url", url),
+		)
 	}
 )
 
@@ -37,7 +49,6 @@ type Exchange interface {
 	AddPairToSubscribedPairs(pair string)                               // Method to add a pair to the list of subscribed pairs
 	ClearSubscribedPairsStorage()                                       // Method to clear the list of subscribed pairs
 	DeletePairFromSubscribedPairs(pair string)                          // Method to delete a pair from the list of subscribed pairs
-	SetExchangeIntoAllExchangesStorage(exchange Exchange)               // Method to set the exchange into the AllExchanges storage
 	SetEchangePairsToStorage(exchangePairsSlice []models.ExchangePairs) // Method to set the exchange pairs into the allPairsOfExchange storage
 	GetOrderbookDataFromExchange(pair string)                           // Method to get the order book data from the exchange
 }
@@ -49,15 +60,12 @@ type ExchangeData struct {
 	userPairsService    service.UserPairsService    // User pairs service for managing user pairs data
 	foundVolumesService service.FoundVolumesService // Service for managing found volumes
 	httpRequestService  service.HttpRequest         // HTTP request service for making API calls
-	allExchangesStorage AllExchanges                // All exchanges storage service
 
-	orderbookService orderbook.Orderbook // Order book service for managing order data
-
-	allPairsOfExchange cmap.ConcurrentMap[string, models.ExchangePairs] // Concurrent map storing all pairs available on this exchange
-
-	pairsSubscribed cmap.ConcurrentMap[string, bool] // List of pairs that are subscribed to updates
-
-	timeBetweenRequests time.Duration // Duration between requests to the exchange API
+	orderbookService    orderbook.Orderbook                              // Order book service for managing order data
+	allPairsOfExchange  cmap.ConcurrentMap[string, models.ExchangePairs] // Concurrent map storing all pairs available on this exchange
+	pairsSubscribed     cmap.ConcurrentMap[string, bool]                 // List of pairs that are subscribed to updates
+	timeBetweenRequests time.Duration                                    // Duration between requests to the exchange API
+	logger              logger.Logger
 
 	pairsUrlForGetRequest     string                                                                      // URL for getting pairs information from the exchange
 	orderbookUrlForGetRequest string                                                                      // URL for getting order book data from the exchange
@@ -90,7 +98,8 @@ func InitAllExchanges(
 	httpRequestService service.HttpRequest,
 	foundVolumesStorage service.FoundVolumesService,
 	allExchangesStorage AllExchanges,
-) {
+	logger logger.Logger,
+) AllExchanges {
 	var wg sync.WaitGroup
 
 	wg.Add(2)
@@ -104,14 +113,15 @@ func InitAllExchanges(
 			userPairsService,
 			httpRequestService,
 			foundVolumesStorage,
-			allExchangesStorage,
+			logger,
 		)
 
 		var binanceWg sync.WaitGroup
 
 		for _, binance := range binances {
-			binanceWg.Add(1)
+			allExchangesStorage.Add(binance)
 
+			binanceWg.Add(1)
 			go func(binance Exchange) {
 				defer binanceWg.Done()
 
@@ -131,14 +141,15 @@ func InitAllExchanges(
 			userPairsService,
 			httpRequestService,
 			foundVolumesStorage,
-			allExchangesStorage,
+			logger,
 		)
 
 		var bybitWg sync.WaitGroup
 
 		for _, bybit := range bybits {
-			bybitWg.Add(1)
+			allExchangesStorage.Add(bybit)
 
+			bybitWg.Add(1)
 			go func(bybit Exchange) {
 				defer bybitWg.Done()
 
@@ -150,6 +161,8 @@ func InitAllExchanges(
 	}()
 
 	wg.Wait() // Wait for the initial goroutine to finish
+
+	return allExchangesStorage
 }
 
 // StartWork starts the exchange's work by filling the pairs subscribed storage, retrieving all
@@ -157,8 +170,6 @@ func InitAllExchanges(
 // finding volume in the order book. This method calls the following methods in order: FillPairsSubscribedStorage,
 // GetAllPairsOfExchange, FindVolumeInOrderbookPeriodically, and GetOrderbookPeriodically.
 func (e *ExchangeData) StartWork() {
-	e.SetExchangeIntoAllExchangesStorage(e) // Add each exchange instance to the AllExchanges storage
-
 	e.FillPairsSubscribedStorage()        // Fill pairs subscribed storage
 	e.GetAllPairsOfExchange()             // Retrieve all pairs available on exchange instance
 	e.FindVolumeInOrderbookPeriodically() // Start finding volume in the order book periodically
@@ -185,16 +196,34 @@ func (e *ExchangeData) StartWork() {
 //
 //	e.GetAllPairsOfExchange()
 func (e *ExchangeData) GetAllPairsOfExchange() {
-	const op = directoryPath + "GetAllPairsOfExchange"
+	resp, err := e.httpRequestService.Get(e.pairsUrlForGetRequest) // Make a GET request to retrieve pairs information
+	if err != nil {
+		errExchange(
+			e.logger,
+			"Error while getting all pairs of exchange",
+			e.exchangeName,
+			e.pairsUrlForGetRequest,
+		)
+	}
+	defer resp.Body.Close() // Ensure response body is closed after reading
 
-	resp, _ := e.httpRequestService.Get(e.pairsUrlForGetRequest) // Make a GET request to retrieve pairs information
-	defer resp.Body.Close()                                      // Ensure response body is closed after reading
-
-	bodyBytes, _ := io.ReadAll(resp.Body) // Read response body into bytes
-
+	bodyBytes, err := io.ReadAll(resp.Body) // Read response body into bytes
+	if err != nil {
+		errExchange(
+			e.logger,
+			"Body bytes read error",
+			e.exchangeName,
+			e.pairsUrlForGetRequest,
+		)
+	}
 	exchangePairsSlice, err := e.exchangePairsJsonParse(e.exchangeName, bodyBytes) // Parse JSON response into exchange pairs slice
 	if err != nil {
-		log.Println(e.exchangeName, op, ": ", err) // Log any errors encountered during parsing
+		errExchange(
+			e.logger,
+			err.Error(),
+			e.exchangeName,
+			e.pairsUrlForGetRequest,
+		)
 	}
 
 	e.SetEchangePairsToStorage(exchangePairsSlice) // Store the retrieved pairs in storage
@@ -212,11 +241,9 @@ func (e *ExchangeData) GetAllPairsOfExchange() {
 //
 //	e.FillPairsSubscribedStorage()
 func (e *ExchangeData) FillPairsSubscribedStorage() {
-	const op = directoryPath + "FillPairsSubscribedStorage"
-
 	pairs, err := e.userPairsService.GetPairsByExchange(context.Background(), e.exchangeName)
 	if err != nil {
-		log.Println(e.exchangeName, op, ": ", err) // Log any errors encountered during retrieval
+		e.logger.Error(err.Error())
 	}
 
 	for _, pair := range pairs {
@@ -241,25 +268,39 @@ func (e *ExchangeData) FillPairsSubscribedStorage() {
 //
 //	e.GetOrderbookDataFromExchange("BTC/USD")
 func (e *ExchangeData) GetOrderbookDataFromExchange(pair string) {
-	const op = directoryPath + "GetOrderbookDataFromExchange"
-
 	// Make a GET request to retrieve order book data using formatted URL
 	resp, err := e.httpRequestService.Get(e.urlFormatter(e.orderbookUrlForGetRequest, pair))
 	if err != nil {
-		// Log any errors encountered during the GET request
-		log.Println(e.exchangeName, op, ": ", err)
+		errExchange(
+			e.logger,
+			"Error while getting orderbook",
+			e.exchangeName,
+			e.orderbookUrlForGetRequest,
+		)
 	}
 
 	defer resp.Body.Close() // Ensure response body is closed after reading
 
 	// Read the response body into bytes
-	bodyBytes, _ := io.ReadAll(resp.Body)
-
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		errExchange(
+			e.logger,
+			"Body bytes read error",
+			e.exchangeName,
+			e.orderbookUrlForGetRequest,
+		)
+	}
 	// Parse JSON response into asks and bids slices
 	asks, bids, err := e.orderbookJsonParse(bodyBytes)
 	if len(asks) == 0 || len(bids) == 0 || err != nil {
 		// Log any errors encountered during JSON parsing
-		log.Println(e.exchangeName, op, ": ", "empty asks or bids or error parsing JSON. Error: ", err)
+		errExchange(
+			e.logger,
+			"Empty asks or bids or error while parsing JSON",
+			e.exchangeName,
+			e.orderbookUrlForGetRequest,
+		)
 	}
 
 	// Update or insert order book data into the order book service
@@ -374,18 +415,9 @@ func (e *ExchangeData) SetEchangePairsToStorage(exchangePairsSlice []models.Exch
 	}
 }
 
-// SetExchangeIntoAllExchangesStorage adds an exchange to the AllExchanges storage.
-//
-// This method adds the provided exchange to the allExchangesStorage concurrent map.
-// It does not return any values and does not produce errors. It assumes that the
-// provided exchange is valid and that the concurrent map is initialized properly.
-func (e *ExchangeData) SetExchangeIntoAllExchangesStorage(exchange Exchange) {
-	e.allExchangesStorage.Add(exchange)
-}
-
 // ExchangeName returns the name of the exchange.
 func (e *ExchangeData) ExchangeName() string {
-	return e.exchangeName //
+	return e.exchangeName
 }
 
 // AddPairToSubscribedPairs adds a trading pair to the set of subscribed pairs for this exchange.

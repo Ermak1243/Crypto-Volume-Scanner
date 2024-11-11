@@ -5,6 +5,7 @@ import (
 	"cvs/api/server/middleware" // Importing middleware for request authentication
 	"cvs/internal/service"      // Importing service layer for business logic
 	"cvs/internal/service/exchange"
+	"cvs/internal/service/logger"
 
 	"github.com/gofiber/fiber/v2" // Importing Fiber framework for web server
 )
@@ -31,8 +32,9 @@ func NewUserRouter(
 	userService service.UserService,
 	jwtService service.JwtService,
 	allExchangesStorage exchange.AllExchanges,
+	logger logger.Logger,
 ) {
-	uc := controller.NewUserController(userService, jwtService, allExchangesStorage) // Create a new instance of UserController
+	uc := controller.NewUserController(userService, jwtService, allExchangesStorage, logger) // Create a new instance of UserController
 
 	authRoutes := group.Group("/auth")                                                        // Create a sub-group for authentication routes
 	authRoutes.Post("/signup", uc.Signup)                                                     // Route for user signup

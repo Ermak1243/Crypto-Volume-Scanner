@@ -1,9 +1,9 @@
 package config
 
 import (
-	"os" // Importing the os package for file operations
+	"os"
 
-	"github.com/ilyakaznacheev/cleanenv" // Importing cleanenv for reading configuration from files
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 // PostgresConfig holds the configuration settings for connecting to a PostgreSQL database.
@@ -16,11 +16,22 @@ type PostgresConfig struct {
 	SslMode  string `yaml:"db_ssl_mode"` // SSL mode for database connection (e.g., "disable", "require")
 }
 
+// Logger config
+type Logger struct {
+	Development       bool   `yaml:"development"`
+	DisableCaller     bool   `yaml:"disable_caller"`
+	DisableStacktrace bool   `yaml:"disable_stacktrace"`
+	Encoding          string `yaml:"encoding"`
+	Level             string `yaml:"level"`
+}
+
 // Config aggregates all configuration settings needed by the application.
 type Config struct {
-	Postgres                  PostgresConfig `yaml:"postgres"`                     // PostgreSQL configuration
-	JwtSecretKey              string         `yaml:"jwt_secret_key"`               // Secret key used for signing JWTs
-	LogLevel                  string         `yaml:"log_level"`                    // Logging level
+	Postgres                  PostgresConfig `yaml:"postgres"` // PostgreSQL configuration
+	Logger                    Logger         `yaml:"logger"`
+	JwtSecretKey              string         `yaml:"jwt_secret_key"` // Secret key used for signing JWTs
+	LogLevel                  string         `yaml:"log_level"`      // Logging level
+	ServerMode                string         `yaml:"server_mode"`
 	ServerPort                string         `yaml:"server_port"`                  // Port on which the server will run
 	AccessTokenLifetimeHours  int            `yaml:"access_token_lifetime_hours"`  // Lifetime of access tokens in hours
 	RefreshTokenLifetimeHours int            `yaml:"refresh_token_lifetime_hours"` // Lifetime of refresh tokens in hours

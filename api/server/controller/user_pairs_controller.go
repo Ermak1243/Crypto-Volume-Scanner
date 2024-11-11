@@ -1,12 +1,12 @@
 package controller
 
 import (
-	"log"
 	"net/http"
 
 	"cvs/internal/models"
 	"cvs/internal/service"
 	"cvs/internal/service/exchange"
+	"cvs/internal/service/logger"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -17,6 +17,7 @@ type userPairsController struct {
 	userService         service.UserService         // Service for managing users data
 	foundVolumesService service.FoundVolumesService // Service for managing found volumes
 	allExchangesStorage exchange.AllExchanges       // Storage for all exchanges
+	logger              logger.Logger
 }
 
 // NewUserPairsController creates a new instance of userPairsController.
@@ -37,12 +38,14 @@ func NewUserPairsController(
 	userService service.UserService,
 	foundVolumesService service.FoundVolumesService,
 	allExchangesStorage exchange.AllExchanges,
+	logger logger.Logger,
 ) *userPairsController {
 	return &userPairsController{
 		userPairsService:    userPairsService,
 		userService:         userService,
 		foundVolumesService: foundVolumesService,
 		allExchangesStorage: allExchangesStorage,
+		logger:              logger,
 	}
 }
 
@@ -70,14 +73,12 @@ func NewUserPairsController(
 // @Failure 500 {object} models.Response "Internal server error"
 // @Router /api/user/pair/add [post]
 func (uc *userPairsController) Add(c *fiber.Ctx) error {
-	const op = directoryPath + "user_controller.Add"
-
 	var pairData models.UserPairs                       // Initialize a UserPairs struct to hold the new pair data
 	pairData.UserID = c.Locals("user").(models.User).ID // Retrieve authenticated user's ID from context locals
 
 	// Parse the request body into pairData
 	if err := c.BodyParser(&pairData); err != nil {
-		log.Println(op, err)
+		uc.logger.Error(err)
 
 		c.Status(http.StatusBadRequest)
 
@@ -88,7 +89,7 @@ func (uc *userPairsController) Add(c *fiber.Ctx) error {
 
 	// Call the service to add the new pair to the database
 	if err := uc.userPairsService.Add(c.Context(), pairData); err != nil {
-		log.Println(op, err)
+		uc.logger.Error(err)
 
 		c.Status(http.StatusInternalServerError)
 
@@ -131,14 +132,12 @@ func (uc *userPairsController) Add(c *fiber.Ctx) error {
 // @Failure 500 {object} models.Response "Internal server error"
 // @Router /api/user/pair/update-exact-value [put]
 func (uc *userPairsController) UpdateExactValue(c *fiber.Ctx) error {
-	const op = directoryPath + "user_controller.UpdateExactValue"
-
 	var pairData models.UserPairs                       // Initialize a UserPairs struct to hold the updated pair data
 	pairData.UserID = c.Locals("user").(models.User).ID // Retrieve authenticated user's ID from context locals
 
 	// Parse the request body into pairData
 	if err := c.BodyParser(&pairData); err != nil {
-		log.Println(op, err)
+		uc.logger.Error(err)
 
 		c.Status(http.StatusBadRequest)
 
@@ -149,7 +148,7 @@ func (uc *userPairsController) UpdateExactValue(c *fiber.Ctx) error {
 
 	// Call the service to update the existing pair in the database
 	if err := uc.userPairsService.UpdateExactValue(c.Context(), pairData); err != nil {
-		log.Println(op, err)
+		uc.logger.Error(err)
 
 		c.Status(http.StatusInternalServerError)
 
@@ -180,14 +179,12 @@ func (uc *userPairsController) UpdateExactValue(c *fiber.Ctx) error {
 // @Failure 500 {object} models.Response "Internal server error"
 // @Router /api/user/pair/all-pairs [get]
 func (uc *userPairsController) GetAllUserPairs(c *fiber.Ctx) error {
-	const op = directoryPath + "user_controller.GetAllUserPairs"
-
 	userID := c.Locals("user").(models.User).ID // Retrieve authenticated user's ID from context locals
 
 	// Call the service to get all pairs associated with the authenticated user's ID
 	userPairs, err := uc.userPairsService.GetAllUserPairs(c.Context(), userID)
 	if err != nil {
-		log.Println(op, err)
+		uc.logger.Error(err)
 
 		c.Status(http.StatusInternalServerError)
 
@@ -229,14 +226,12 @@ func (uc *userPairsController) GetAllUserPairs(c *fiber.Ctx) error {
 // @Failure 500 {object} models.Response "Internal Server Error"
 // @Router /api/user/pair/found-volumes [get]
 func (uc *userPairsController) GetAllUserFoundVolumes(c *fiber.Ctx) error {
-	const op = directoryPath + "user_controller.GetAllUserFoundVolumes"
-
 	userID := c.Locals("user").(models.User).ID // Retrieve authenticated user's ID from context locals
 
 	// Call the service to get all pairs associated with the authenticated user's ID
 	foundVolumes, err := uc.foundVolumesService.GetAllFoundVolume(userID)
 	if err != nil {
-		log.Println(op, err)
+		uc.logger.Error(err)
 
 		c.Status(http.StatusInternalServerError)
 
@@ -284,8 +279,6 @@ func (uc *userPairsController) GetAllUserFoundVolumes(c *fiber.Ctx) error {
 // @Failure 500 {object} models.Response "Internal server error"
 // @Router /api/user/pair [delete]
 func (uc *userPairsController) DeletePair(c *fiber.Ctx) error {
-	const op = directoryPath + "user_controller.DeletePair"
-
 	pair := c.Query("pair")                // Retrieve pair from query string
 	user := c.Locals("user").(models.User) // Retrieve authenticated user from context locals
 
@@ -296,7 +289,7 @@ func (uc *userPairsController) DeletePair(c *fiber.Ctx) error {
 
 	// Call the service to delete the specified pair from the database
 	if err := uc.userPairsService.DeletePair(c.Context(), userPairData); err != nil {
-		log.Println(op, err)
+		uc.logger.Error(err)
 
 		c.Status(http.StatusInternalServerError) // Set HTTP status to 500 if an error occurs
 

@@ -23,9 +23,7 @@ package middleware
 import (
 	"cvs/internal/models"  // Importing models for data structures
 	"cvs/internal/service" // Importing service layer for business logic
-	"log"
 	"net/http"
-	"os"
 
 	"github.com/gofiber/fiber/v2"                    // Importing Fiber framework
 	"github.com/gofiber/fiber/v2/middleware/cors"    // Importing CORS middleware
@@ -65,9 +63,7 @@ func MiddlewaresSetup(server *fiber.App) {
 			AllowMethods: "POST, GET, DELETE, PUT",                // Specify allowed HTTP methods
 			AllowHeaders: "Accept, Accept-Language, Content-Type", // Specify allowed headers
 		}),
-		logger.New(logger.Config{
-			Output: createFileForLogs(), // Set up logging output to a file
-		}),
+		logger.New(),
 		limiter.New(limiter.Config{
 			Max: 1000, // Set maximum number of requests per IP address
 		}),
@@ -118,21 +114,4 @@ func IsAuthenticated(jwtService service.JwtService, userService service.UserServ
 
 		return c.Next() // Proceed to the next middleware or handler
 	}
-}
-
-// createFileForLogs creates or opens a log file to store application logs.
-//
-// This helper function attempts to open a log file named "cvf.log" with read/write permissions.
-// If successful, it returns a file handle for logging output. In case of an error,
-// it logs a fatal message and terminates the application.
-//
-// Returns:
-//   - *os.File: A pointer to an opened log file.
-func createFileForLogs() *os.File {
-	file, err := os.OpenFile("../../cvs.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666) // Open log file with read/write permissions
-	if err != nil {
-		log.Fatalf("error opening file: %v", err) // Log fatal error if file cannot be opened
-	}
-
-	return file // Return the opened file handle for logging output
 }

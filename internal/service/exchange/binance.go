@@ -6,6 +6,7 @@ import (
 
 	"cvs/internal/models"
 	"cvs/internal/service"
+	"cvs/internal/service/logger"
 	"cvs/internal/service/orderbook"
 
 	"github.com/goccy/go-json"
@@ -82,7 +83,7 @@ func NewBinance(
 	userPairsService service.UserPairsService,
 	httpRequestService service.HttpRequest,
 	foundVolumeService service.FoundVolumesService,
-	allExchangesStorage AllExchanges,
+	logger logger.Logger,
 ) []Exchange {
 	var binances []Exchange // Slice to hold instances of different Binance exchanges
 	initFunctions := []func(exchangesData *ExchangeData) *ExchangeData{
@@ -97,7 +98,7 @@ func NewBinance(
 			userPairsService,
 			httpRequestService,
 			foundVolumeService,
-			allExchangesStorage,
+			logger,
 		)
 
 		binances = append(binances, function(exchangeData))
@@ -125,14 +126,14 @@ func setBinanceOverallData(
 	userPairsService service.UserPairsService,
 	httpRequestService service.HttpRequest,
 	foundVolumeService service.FoundVolumesService,
-	allExchangesStorage AllExchanges,
+	logger logger.Logger,
 ) *ExchangeData {
 	binanceExchangesData := ExchangeData{
 		userService:            userService,
 		userPairsService:       userPairsService,
 		httpRequestService:     httpRequestService,
 		foundVolumesService:    foundVolumeService,
-		allExchangesStorage:    allExchangesStorage,
+		logger:                 logger,
 		pairsJsonModel:         binancePairsJsonModel,            // Set pairs JSON model for exchanges
 		orderbookJsonModel:     binanceOrderbookJsonModel,        // Set orderbook JSON model for exchanges
 		urlFormatter:           binanceUrlFormatter,              // Set URL formatter function for exchanges

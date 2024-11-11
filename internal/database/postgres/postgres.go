@@ -35,7 +35,7 @@ func NewPostgresDB(cfg config.PostgresConfig) Postgres {
 		panic(err)
 	}
 
-	log.Println("Successfully connected to PostgresConfig!")
+	log.Println("Successfully connected to Postgres!")
 
 	return &postgres{
 		db: db,

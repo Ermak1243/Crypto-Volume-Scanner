@@ -103,7 +103,8 @@ func TestUpdatePassword(t *testing.T) {
 			if !tc.wantErr {
 				id, err := insertUser(db, tc.user.Email, tc.user.Password) // Insert user if no error is expected
 				defer db.ExecContext(ctx, deleteUserQueryRow, id)          // Clean up by deleting the user after the test
-				assert.NoError(t, err)                                     // Ensure no error occurred during insertion
+
+				assert.NoError(t, err) // Ensure no error occurred during insertion
 
 				tc.user.ID = id // Set the ID of the user for further operations
 			}
@@ -154,24 +155,22 @@ func TestUpdateRefreshToken(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel() // Run this test case in parallel
 
-			db := setupDB()  // Set up the database connection for testing
-			defer db.Close() // Ensure the database connection is closed after the test
+			db := setupDB()                              // Set up the database connection for testing
+			defer db.Close()                             // Ensure the database connection is closed after the test
+			userRepo := repository.NewUserRepository(db) // Initialize the user repository
 
 			if !tc.wantErr {
 				id, err := insertUser(db, tc.user.Email, tc.user.Password) // Insert user if no error is expected
 				defer db.ExecContext(ctx, deleteUserQueryRow, id)          // Clean up by deleting the user after the test
-				assert.NoError(t, err)                                     // Ensure no error occurred during insertion
+				assert.NoError(t, err)
 
-				tc.user.ID = id // Set the ID of the user for further operations
-			}
-
-			userRepo := repository.NewUserRepository(db) // Initialize the user repository
-
-			err := userRepo.UpdateRefreshToken(ctx, tc.user) // Attempt to update user's refresh token in database
-			if tc.wantErr {
-				assert.Error(t, err) // Check that an error occurred if one was expected
+				tc.user.ID = id
+				err = userRepo.UpdateRefreshToken(ctx, tc.user) // Attempt to update user's refresh token in database
+				assert.NoError(t, err)                          // Check that no error occurred
 			} else {
-				assert.NoError(t, err) // Check that no error occurred
+				tc.user.ID = 99999
+				err := userRepo.UpdateRefreshToken(ctx, tc.user) // Attempt to update user's refresh token in database
+				assert.Error(t, err)
 			}
 		})
 	}

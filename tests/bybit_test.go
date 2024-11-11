@@ -17,7 +17,7 @@ func TestNewBybit(t *testing.T) {
 	mockUserPairsService := mocks.NewUserPairsService(t)
 	mockHttpRequestService := mocks.NewHttpRequest(t)
 	mockFoundVolumeService := mocks.NewFoundVolumesService(t)
-	mockAllExchangesStorage := mocks.NewAllExchanges(t)
+	mockLogger := mocks.NewLogger(t)
 
 	// Call NewBybit with mocked services
 	bybits := exchange.NewBybit(
@@ -25,7 +25,7 @@ func TestNewBybit(t *testing.T) {
 		mockUserPairsService,
 		mockHttpRequestService,
 		mockFoundVolumeService,
-		mockAllExchangesStorage,
+		mockLogger,
 	)
 
 	// Assert that the returned slice of exchanges is not nil and has expected length

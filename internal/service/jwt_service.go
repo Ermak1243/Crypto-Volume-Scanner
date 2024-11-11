@@ -32,7 +32,11 @@ type jwtService struct {
 //
 // Returns:
 //   - An instance of JwtService.
-func NewJwtService(secretKey string, accessTokenLifetimeHours, refreshTokenLifetimeHours time.Duration) JwtService {
+func NewJwtService(
+	secretKey string,
+	accessTokenLifetimeHours,
+	refreshTokenLifetimeHours time.Duration,
+) JwtService {
 	return &jwtService{
 		secretKey:                 []byte(secretKey),         // Convert secret key to byte slice
 		accessTokenLifetimeHours:  accessTokenLifetimeHours,  // Set access token lifetime in hours

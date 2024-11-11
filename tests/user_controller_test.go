@@ -26,10 +26,14 @@ func TestSignup(t *testing.T) {
 
 	// Define a slice of test cases for the Signup functionality
 	tests := []struct {
-		name         string                                                       // Name of the test case
-		newUserData  models.UserAuth                                              // New user data for signup
-		mocksSetup   func(userMock *mocks.UserService, jwtMock *mocks.JwtService) // Function to set up mock behavior
-		expectedCode int                                                          // Expected HTTP status code after the request
+		name        string          // Name of the test case
+		newUserData models.UserAuth // New user data for signup
+		mocksSetup  func(
+			userMock *mocks.UserService,
+			jwtMock *mocks.JwtService,
+			mockLogger *mocks.Logger,
+		) // Function to set up mock behavior
+		expectedCode int // Expected HTTP status code after the request
 	}{
 		{
 			name: "Successful Signup",
@@ -37,7 +41,7 @@ func TestSignup(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "password123",
 			},
-			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
 				userMock.On("InsertUser", mock.Anything, mock.Anything).Return(1, nil)                    // Mock successful user insertion
 				userMock.On("UpdateRefreshToken", mock.Anything, mock.Anything).Return(nil)               // Mock successful refresh token update
 				jwtMock.On("CreateAccessToken", 1, mock.Anything).Return("accessToken", int64(3600), nil) // Mock access token creation
@@ -51,8 +55,10 @@ func TestSignup(t *testing.T) {
 				Email:    "",
 				Password: "",
 			},
-			mocksSetup:   func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {}, // No mocks needed for this case
-			expectedCode: http.StatusBadRequest,                                           // Expecting 400 Bad Request status due to invalid input
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
+				mockLogger.On("Error", mock.Anything).Return(nil) // Mock refresh token creation
+			}, // No mocks needed for this case
+			expectedCode: http.StatusBadRequest, // Expecting 400 Bad Request status due to invalid input
 		},
 		{
 			name: "Error Inserting User",
@@ -60,7 +66,8 @@ func TestSignup(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "password123",
 			},
-			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
+				mockLogger.On("Error", mock.Anything).Return(nil)                                             // Mock refresh token creation
 				userMock.On("InsertUser", mock.Anything, mock.Anything).Return(0, errors.New("insert error")) // Mock error during user insertion
 			},
 			expectedCode: http.StatusInternalServerError, // Expecting 500 Internal Server Error status due to insertion failure
@@ -78,13 +85,14 @@ func TestSignup(t *testing.T) {
 			mockUserService := mocks.NewUserService(t)          // Create a new mock user service
 			mockJwtService := mocks.NewJwtService(t)            // Create a new mock JWT service
 			mockAllExchangesStorage := mocks.NewAllExchanges(t) // Create a new mock all exchanges storage
+			mockLogger := mocks.NewLogger(t)
 
 			if tc.mocksSetup != nil {
-				tc.mocksSetup(mockUserService, mockJwtService) // Setup mocks for the current test case
+				tc.mocksSetup(mockUserService, mockJwtService, mockLogger) // Setup mocks for the current test case
 			}
 
-			uc := controller.NewUserController(mockUserService, mockJwtService, mockAllExchangesStorage) // Create a new UserController instance
-			app.Post("/api/user/auth/signup", uc.Signup)                                                 // Define POST route for signup
+			uc := controller.NewUserController(mockUserService, mockJwtService, mockAllExchangesStorage, mockLogger) // Create a new UserController instance
+			app.Post("/api/user/auth/signup", uc.Signup)                                                             // Define POST route for signup
 
 			reqBody := `{"email":"` + tc.newUserData.Email + `","password":"` + tc.newUserData.Password + `"}`
 			req := httptest.NewRequest("POST", "/api/user/auth/signup", strings.NewReader(reqBody)) // Create a new POST request with JSON body
@@ -104,17 +112,17 @@ func TestTokens(t *testing.T) {
 
 	// Define a slice of test cases for the Tokens functionality
 	tests := []struct {
-		name         string                                                       // Name of the test case
-		userID       int                                                          // User ID for token generation
-		refreshToken string                                                       // Refresh token for authentication
-		mocksSetup   func(userMock *mocks.UserService, jwtMock *mocks.JwtService) // Function to set up mock behavior
-		expectedCode int                                                          // Expected HTTP status code after the request
+		name         string                                                                                 // Name of the test case
+		userID       int                                                                                    // User ID for token generation
+		refreshToken string                                                                                 // Refresh token for authentication
+		mocksSetup   func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) // Function to set up mock behavior
+		expectedCode int                                                                                    // Expected HTTP status code after the request
 	}{
 		{
 			name:         "Successful Token Retrieval",
 			userID:       1,
 			refreshToken: "valid_refresh_token", // Valid refresh token for authentication
-			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
 				// Mock successful access and refresh token creation
 				userMock.On("UpdateRefreshToken", mock.Anything, mock.Anything).Return(nil)
 				jwtMock.On("CreateAccessToken", 1, mock.Anything).Return("newAccessToken", int64(3600), nil)
@@ -123,8 +131,12 @@ func TestTokens(t *testing.T) {
 			expectedCode: http.StatusOK, // Expecting 200 OK status
 		},
 		{
-			name:         "Invalid Refresh Token",
-			userID:       1,
+			name:   "Invalid Refresh Token",
+			userID: 1,
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
+				// Mock successful access and refresh token creation
+				mockLogger.On("Error", mock.Anything).Return(nil)
+			},
 			refreshToken: "",                      // Invalid refresh token (empty)
 			expectedCode: http.StatusUnauthorized, // Expecting 401 Unauthorized status due to invalid refresh token
 		},
@@ -132,8 +144,8 @@ func TestTokens(t *testing.T) {
 			name:         "Error Retrieving User",
 			userID:       1,
 			refreshToken: "valid_refresh_token",
-			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {
-				// Mock error during access token creation
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
+				// mockLogger.On("Error", mock.Anything).Return(nil)
 				jwtMock.On("CreateAccessToken", mock.Anything, mock.Anything).Return("", int64(0), errors.New("token creation error"))
 			},
 			expectedCode: http.StatusInternalServerError, // Expecting 500 Internal Server Error status due to retrieval failure
@@ -151,18 +163,19 @@ func TestTokens(t *testing.T) {
 			mockUserService := mocks.NewUserService(t)          // Create a new mock user service
 			mockJwtService := mocks.NewJwtService(t)            // Create a new mock JWT service
 			mockAllExchangesStorage := mocks.NewAllExchanges(t) // Create a new mock all exchanges storage
+			mockLogger := mocks.NewLogger(t)
 
 			if tc.mocksSetup != nil {
-				tc.mocksSetup(mockUserService, mockJwtService) // Setup mocks for the current test case
+				tc.mocksSetup(mockUserService, mockJwtService, mockLogger) // Setup mocks for the current test case
 			}
 
-			userController := controller.NewUserController(mockUserService, mockJwtService, mockAllExchangesStorage) // Create a new UserController instance
+			userController := controller.NewUserController(mockUserService, mockJwtService, mockAllExchangesStorage, mockLogger) // Create a new UserController instance
 
 			app.Get("/api/user/auth/tokens", func(c *fiber.Ctx) error {
 				user := models.User{ID: tc.userID}    // Create a user model with the specified user ID
 				user.SetRefreshToken(tc.refreshToken) // Set the refresh token for the user
 
-				if tc.mocksSetup == nil {
+				if tc.name == "Invalid Refresh Token" {
 					user.SetRefreshToken("1")
 				}
 
@@ -185,10 +198,10 @@ func TestLogin(t *testing.T) {
 	t.Parallel() // Allows this test to run in parallel with other tests
 
 	tests := []struct {
-		name         string                                                       // Name of the test case
-		userData     models.UserAuth                                              // User authentication data for login
-		mocksSetup   func(userMock *mocks.UserService, jwtMock *mocks.JwtService) // Function to set up mock behavior
-		expectedCode int                                                          // Expected HTTP status code after the request
+		name         string                                                                                 // Name of the test case
+		userData     models.UserAuth                                                                        // User authentication data for login
+		mocksSetup   func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) // Function to set up mock behavior
+		expectedCode int                                                                                    // Expected HTTP status code after the request
 	}{
 		{
 			name: "Successful Login",
@@ -196,7 +209,7 @@ func TestLogin(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "password123",
 			},
-			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
 				user := models.User{ID: 1, Email: "test@example.com"}
 				user.SetPassword("password123")                                                                 // Assume this sets a hashed password correctly
 				userMock.On("UpdateRefreshToken", mock.Anything, mock.Anything).Return(nil)                     // Mock successful user retrieval
@@ -212,7 +225,8 @@ func TestLogin(t *testing.T) {
 				Email:    "notfound@example.com",
 				Password: "password123",
 			},
-			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
+				mockLogger.On("Error", mock.Anything).Return(nil)
 				userMock.On("GetUserByEmail", mock.Anything, "notfound@example.com").Return(models.User{}, errors.New("user not found")) // Mock user not found error
 			},
 			expectedCode: http.StatusBadRequest, // Expecting 400 Bad Request status due to user not found
@@ -223,10 +237,11 @@ func TestLogin(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "wrongpassword",
 			},
-			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
 				user := models.User{ID: 1, Email: "test@example.com"}
 				user.SetPassword("password123")
 				userMock.On("GetUserByEmail", mock.Anything, "test@example.com").Return(user, nil) // Mock successful user retrieval
+				mockLogger.On("Error", mock.Anything).Return(nil)
 			},
 			expectedCode: http.StatusBadRequest, // Expecting 400 Bad Request status due to invalid password
 		},
@@ -236,11 +251,12 @@ func TestLogin(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "password123",
 			},
-			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
 				user := models.User{ID: -1, Email: "test@example.com"}
 				user.SetPassword("password123")
 				userMock.On("GetUserByEmail", mock.Anything, "test@example.com").Return(user, nil)
 				jwtMock.On("CreateAccessToken", user.ID, mock.Anything).Return("", int64(0), errors.New("token error")) // Mock token generation error
+				mockLogger.On("Error", mock.Anything).Return(nil)
 			},
 			expectedCode: http.StatusInternalServerError, // Expecting 500 Internal Server Error status due to token generation failure
 		},
@@ -257,12 +273,13 @@ func TestLogin(t *testing.T) {
 			mockUserService := mocks.NewUserService(t)
 			mockJwtService := mocks.NewJwtService(t)
 			mockAllExchangesStorage := mocks.NewAllExchanges(t) // Create a new mock all exchanges storage
+			mockLogger := mocks.NewLogger(t)
 
 			if tc.mocksSetup != nil {
-				tc.mocksSetup(mockUserService, mockJwtService) // Setup mocks for the current test case
+				tc.mocksSetup(mockUserService, mockJwtService, mockLogger) // Setup mocks for the current test case
 			}
 
-			userController := controller.NewUserController(mockUserService, mockJwtService, mockAllExchangesStorage) // Create a new UserController instance
+			userController := controller.NewUserController(mockUserService, mockJwtService, mockAllExchangesStorage, mockLogger) // Create a new UserController instance
 			app.Post("/api/user/auth/login", userController.Login)
 
 			reqBody := `{"email":"` + tc.userData.Email + `","password":"` + tc.userData.Password + `"}`
@@ -284,19 +301,19 @@ func TestUpdatePasswordController(t *testing.T) {
 	t.Parallel() // Allows this test to run in parallel with other tests
 
 	tests := []struct {
-		name         string                                                          // Name of the test case
-		userID       int                                                             // User ID for updating password
-		oldPassword  []byte                                                          // Old password for validation
-		newPassword  []byte                                                          // New password to be set
-		mocksSetup   func(userMock *mocks.UserService, jwtService *mocks.JwtService) // Function to set up mock behavior
-		expectedCode int                                                             // Expected HTTP status code after the request
+		name         string                                                                                    // Name of the test case
+		userID       int                                                                                       // User ID for updating password
+		oldPassword  []byte                                                                                    // Old password for validation
+		newPassword  []byte                                                                                    // New password to be set
+		mocksSetup   func(userMock *mocks.UserService, jwtService *mocks.JwtService, mockLogger *mocks.Logger) // Function to set up mock behavior
+		expectedCode int                                                                                       // Expected HTTP status code after the request
 	}{
 		{
 			name:        "Successful Password Update",
 			userID:      1,
 			oldPassword: []byte("oldpassword123"),
 			newPassword: []byte("newpassword123"),
-			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
 				jwtMock.On("CreateAccessToken", mock.Anything, mock.Anything).Return("", int64(3600), nil) // Mock access token creation
 				jwtMock.On("CreateRefreshToken", mock.Anything, mock.Anything).Return("", nil)             // Mock refresh token creation
 				userMock.On("UpdatePassword", mock.Anything, mock.Anything).Return(nil)                    // Mock successful password update
@@ -304,8 +321,11 @@ func TestUpdatePasswordController(t *testing.T) {
 			expectedCode: http.StatusOK, // Expecting 200 OK status
 		},
 		{
-			name:         "Invalid Old Password",
-			userID:       1,
+			name:   "Invalid Old Password",
+			userID: 1,
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
+				mockLogger.On("Error", mock.Anything).Return(nil)
+			},
 			oldPassword:  []byte("wrongpassword"),
 			newPassword:  []byte("newpassword123"),
 			expectedCode: http.StatusBadRequest, // Expecting 400 Bad Request status due to invalid old password
@@ -315,10 +335,11 @@ func TestUpdatePasswordController(t *testing.T) {
 			userID:      1,
 			oldPassword: []byte("oldpassword123"),
 			newPassword: []byte("newpassword123"),
-			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService) {
+			mocksSetup: func(userMock *mocks.UserService, jwtMock *mocks.JwtService, mockLogger *mocks.Logger) {
 				jwtMock.On("CreateAccessToken", mock.Anything, mock.Anything).Return("", int64(3600), nil)     // Mock access token creation
 				jwtMock.On("CreateRefreshToken", mock.Anything, mock.Anything).Return("", nil)                 // Mock refresh token creation
 				userMock.On("UpdatePassword", mock.Anything, mock.Anything).Return(errors.New("update error")) // Mock error during password update
+				mockLogger.On("Error", mock.Anything).Return(nil)
 			},
 			expectedCode: http.StatusInternalServerError, // Expecting 500 Internal Server Error status due to update failure
 		},
@@ -335,18 +356,19 @@ func TestUpdatePasswordController(t *testing.T) {
 			mockUserService := mocks.NewUserService(t) // Create a new mock User service
 			mockJwtService := mocks.NewJwtService(t)
 			mockAllExchangesStorage := mocks.NewAllExchanges(t) // Create a new mock all exchanges storage
+			mockLogger := mocks.NewLogger(t)
 
 			if tc.mocksSetup != nil {
-				tc.mocksSetup(mockUserService, mockJwtService) // Setup mocks for the current test case
+				tc.mocksSetup(mockUserService, mockJwtService, mockLogger) // Setup mocks for the current test case
 			}
 
-			userController := controller.NewUserController(mockUserService, mockJwtService, mockAllExchangesStorage) // Create a new UserController instance
+			userController := controller.NewUserController(mockUserService, mockJwtService, mockAllExchangesStorage, mockLogger) // Create a new UserController instance
 
 			app.Put("/api/user/auth/update-password", func(c *fiber.Ctx) error {
 				user := models.User{ID: tc.userID}
 				user.SetPassword(string(tc.oldPassword))
 
-				if tc.mocksSetup == nil {
+				if tc.name == "Invalid Old Password" {
 					user.SetPassword("")
 				}
 
@@ -376,14 +398,14 @@ func TestUpdatePasswordController(t *testing.T) {
 func TestDeleteUserController(t *testing.T) {
 	// Define a slice of test cases for the DeleteUserController.
 	tests := []struct {
-		name         string                                                                                                // Name of the test case
-		mocksSetup   func(userMock *mocks.UserService, allExchangesMock *mocks.AllExchanges, exchangeMock *mocks.Exchange) // Function to set up mock behavior
-		expectedCode int                                                                                                   // Expected HTTP status code after the request
-		expectedBody string                                                                                                // Expected response body in JSON format
+		name         string                                                                                                                          // Name of the test case
+		mocksSetup   func(userMock *mocks.UserService, allExchangesMock *mocks.AllExchanges, exchangeMock *mocks.Exchange, mockLogger *mocks.Logger) // Function to set up mock behavior
+		expectedCode int                                                                                                                             // Expected HTTP status code after the request
+		expectedBody string                                                                                                                          // Expected response body in JSON format
 	}{
 		{
 			name: "Successful User Deletion",
-			mocksSetup: func(userMock *mocks.UserService, allExchangesMock *mocks.AllExchanges, exchangeMock *mocks.Exchange) {
+			mocksSetup: func(userMock *mocks.UserService, allExchangesMock *mocks.AllExchanges, exchangeMock *mocks.Exchange, mockLogger *mocks.Logger) {
 				// Setup mock to return no error when DeleteUser is called.
 				allExchangesMock.On("All").Return([]exchange.Exchange{exchangeMock})
 				exchangeMock.On("ClearSubscribedPairsStorage").Return()
@@ -395,8 +417,9 @@ func TestDeleteUserController(t *testing.T) {
 		},
 		{
 			name: "Error Deleting User",
-			mocksSetup: func(userMock *mocks.UserService, allExchangesMock *mocks.AllExchanges, exchangeMock *mocks.Exchange) {
+			mocksSetup: func(userMock *mocks.UserService, allExchangesMock *mocks.AllExchanges, exchangeMock *mocks.Exchange, mockLogger *mocks.Logger) {
 				// Setup mock to return an error when DeleteUser is called.
+				mockLogger.On("Error", mock.Anything).Return(nil)
 				userMock.On("DeleteUser", mock.Anything, 1).Return(errors.New("deletion error"))
 			},
 			expectedCode: http.StatusInternalServerError,      // Expecting 500 Internal Server Error status
@@ -416,11 +439,13 @@ func TestDeleteUserController(t *testing.T) {
 			mockUserService := mocks.NewUserService(t)          // Create a new mock user service
 			mockAllExchangesStorage := mocks.NewAllExchanges(t) // Create a new mock all exchanges storage
 			mockExchange := mocks.NewExchange(t)                // Create a new mock exchange
+			mockLogger := mocks.NewLogger(t)
+
 			if tc.mocksSetup != nil {
-				tc.mocksSetup(mockUserService, mockAllExchangesStorage, mockExchange) // Setup mocks for the current test case
+				tc.mocksSetup(mockUserService, mockAllExchangesStorage, mockExchange, mockLogger) // Setup mocks for the current test case
 			}
 
-			userController := controller.NewUserController(mockUserService, nil, mockAllExchangesStorage) // Create a new UserController instance
+			userController := controller.NewUserController(mockUserService, nil, mockAllExchangesStorage, mockLogger) // Create a new UserController instance
 			app.Delete("/api/user", func(c *fiber.Ctx) error {
 				user := models.User{ID: 1}         // Create a user model with ID 1
 				user.SetPassword("oldpassword123") // Set a dummy password (not used in this test)

@@ -18,7 +18,7 @@ func TestNewBinance(t *testing.T) {
 	mockUserPairsService := mocks.NewUserPairsService(t)
 	mockHttpRequestService := mocks.NewHttpRequest(t)
 	mockFoundVolumeService := mocks.NewFoundVolumesService(t)
-	mockAllExchangesStorage := mocks.NewAllExchanges(t)
+	mockLogger := mocks.NewLogger(t)
 
 	// Call NewBinance with mocked services
 	binances := exchange.NewBinance(
@@ -26,7 +26,7 @@ func TestNewBinance(t *testing.T) {
 		mockUserPairsService,
 		mockHttpRequestService,
 		mockFoundVolumeService,
-		mockAllExchangesStorage,
+		mockLogger,
 	)
 
 	// Assert that the returned slice of exchanges is not nil and has expected length

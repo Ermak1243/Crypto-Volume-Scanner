@@ -26,6 +26,7 @@ import (
 	"cvs/api/server/middleware" // Importing middleware for route protection
 	"cvs/internal/service"      // Importing services for business logic
 	"cvs/internal/service/exchange"
+	"cvs/internal/service/logger"
 
 	"github.com/gofiber/fiber/v2" // Importing Fiber framework
 )
@@ -73,6 +74,7 @@ func Setup(
 	jwtService service.JwtService,
 	foundVolumesService service.FoundVolumesService,
 	allExchangesStorage exchange.AllExchanges,
+	logger logger.Logger,
 ) {
 	api := fiber.Group("/api") // Create a new group for API routes
 
@@ -86,6 +88,7 @@ func Setup(
 		userService,
 		jwtService,
 		allExchangesStorage,
+		logger,
 	) // Initialize user routes
 
 	userPairsRoute := userRoute.Group("/pair").Use(middleware.IsAuthenticated(jwtService, userService)) // Create a protected group for user pairs
@@ -95,5 +98,6 @@ func Setup(
 		userService,
 		foundVolumesService,
 		allExchangesStorage,
+		logger,
 	) // Initialize user pairs routes
 }

@@ -1,10 +1,17 @@
 postgres:
   db_user: "cvs"
-  db_host: "cvs-postgres"
+  db_host: "cvs-network"
   db_name: "cvs"
   db_password: "password"
-  db_port: 5432
+  db_port: 5434
   db_ssl_mode: "disable"  
+
+logger:
+  development: true
+  disable_caller: false
+  disable_stacktrace: false
+  encoding: "json"
+  level: "info"
 
 jwt_secret_key: "secret"
 context_timeout: 3
