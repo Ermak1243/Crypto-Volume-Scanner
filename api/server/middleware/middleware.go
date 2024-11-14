@@ -57,11 +57,11 @@ import (
 //	    middleware.MiddlewaresSetup(app)
 //	    app.Listen(":3000")
 //	}
-func MiddlewaresSetup(server *fiber.App) {
+func Setup(server *fiber.App) {
 	server.Use(
 		cors.New(cors.Config{
-			AllowMethods: "POST, GET, DELETE, PUT",                // Specify allowed HTTP methods
-			AllowHeaders: "Accept, Accept-Language, Content-Type", // Specify allowed headers
+			AllowMethods: "POST, GET, DELETE, PUT",                               // Specify allowed HTTP methods
+			AllowHeaders: "Accept, Accept-Language, Content-Type, Authorization", // Specify allowed headers
 		}),
 		logger.New(),
 		limiter.New(limiter.Config{

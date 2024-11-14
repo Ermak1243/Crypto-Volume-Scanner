@@ -67,7 +67,7 @@ func Run() {
 		JSONDecoder: json.Unmarshal, // Set custom JSON decoder for requests
 		Immutable:   true,           // Enable immutable routes (for performance)
 	})
-	middleware.MiddlewaresSetup(fiber)
+	middleware.Setup(fiber)
 
 	// Setup routes for the Fiber application with provided services
 	route.Setup(
